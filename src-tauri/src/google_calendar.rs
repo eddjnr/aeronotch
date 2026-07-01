@@ -740,7 +740,19 @@ pub fn parse_ics(text: &str, owner_email: Option<&str>) -> Vec<CalendarEvent> {
 
 pub async fn fetch_events(url: &str) -> Result<Vec<CalendarEvent>, String> {
     let client = reqwest::Client::new();
-    let res = client.get(url)
+    
+    // Add cache buster query parameter to bypass CDN/proxy caches
+    let buster = chrono::Utc::now().timestamp();
+    let buster_url = if url.contains('?') {
+        format!("{}&t={}", url, buster)
+    } else {
+        format!("{}?t={}", url, buster)
+    };
+
+    let res = client.get(&buster_url)
+        .header("Cache-Control", "no-cache, no-store, must-revalidate")
+        .header("Pragma", "no-cache")
+        .header("Expires", "0")
         .send()
         .await
         .map_err(|e| format!("HTTP request failed: {}", e))?;
