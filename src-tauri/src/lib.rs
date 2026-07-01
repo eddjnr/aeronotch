@@ -149,8 +149,14 @@ async fn open_settings_window(app_handle: tauri::AppHandle) -> Result<(), String
 #[tauri::command]
 async fn connect_google_calendar(app_handle: tauri::AppHandle, url: String) -> Result<(), String> {
     // Validate the URL immediately before saving
-    let _events = google_calendar::fetch_events(&url).await?;
+    let events = google_calendar::fetch_events(&url).await?;
     google_calendar::save_config(&app_handle, &google_calendar::CalendarConfig { url })?;
+
+    // Emit events immediately so the frontend loads them without waiting 15 minutes
+    let payload = serde_json::json!({
+        "items": events
+    });
+    let _ = app_handle.emit("google-calendar-events", &payload);
     Ok(())
 }
 
@@ -169,6 +175,20 @@ async fn get_google_calendar_status(app_handle: tauri::AppHandle) -> Result<serd
     } else {
         Ok(serde_json::json!({
             "connected": false,
+        }))
+    }
+}
+
+#[tauri::command]
+async fn get_calendar_events(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    if let Some(config) = google_calendar::load_config(&app_handle) {
+        let events = google_calendar::fetch_events(&config.url).await?;
+        Ok(serde_json::json!({
+            "items": events
+        }))
+    } else {
+        Ok(serde_json::json!({
+            "items": []
         }))
     }
 }
@@ -202,6 +222,7 @@ pub fn run() {
             connect_google_calendar,
             disconnect_google_calendar,
             get_google_calendar_status,
+            get_calendar_events,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main").unwrap();

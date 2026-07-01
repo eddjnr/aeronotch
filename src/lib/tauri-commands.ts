@@ -65,3 +65,7 @@ export async function getGoogleCalendarStatus(): Promise<GoogleCalendarStatus> {
   return invoke<GoogleCalendarStatus>('get_google_calendar_status');
 }
 
+export async function getCalendarEvents(): Promise<any> {
+  return invoke('get_calendar_events');
+}
+

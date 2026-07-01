@@ -2,6 +2,7 @@ import { useMemo, useEffect, useState } from 'react';
 import { CalendarCheck } from 'lucide-react';
 import { listen } from '@tauri-apps/api/event';
 import type { IslandMode } from '../../types';
+import { getCalendarEvents } from '../../lib/tauri-commands';
 
 interface CalendarWidgetProps {
   mode: IslandMode;
@@ -13,6 +14,24 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
 
   // Listen to Google Calendar events emitted from Rust backend
   useEffect(() => {
+    // 1. Fetch initial events immediately on mount
+    getCalendarEvents()
+      .then((payload) => {
+        if (payload && Array.isArray(payload.items)) {
+          const now = Date.now();
+          const upcoming = payload.items
+            .filter((item: any) => {
+              const end = item.end?.dateTime ? new Date(item.end.dateTime).getTime() : 0;
+              const allDayEnd = item.end?.date ? new Date(item.end.date).getTime() : 0;
+              return (end || allDayEnd) > now;
+            })
+            .slice(0, 2);
+          setEvents(upcoming);
+        }
+      })
+      .catch(console.error);
+
+    // 2. Listen to updates
     let unlisten: (() => void) | undefined;
 
     listen('google-calendar-events', (event: any) => {
