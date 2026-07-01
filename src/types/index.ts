@@ -14,6 +14,12 @@ export interface SystemStats {
   total_memory: number;
   used_memory: number;
   memory_percent: number;
+  gpu_name: string;
+  gpu_usage: number;
+  disk_name: string;
+  disk_total: number;
+  disk_used: number;
+  disk_percent: number;
 }
 
 export interface WeatherInfo {

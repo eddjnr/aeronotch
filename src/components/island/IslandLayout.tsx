@@ -6,7 +6,7 @@ import { CalendarWidget } from '../widgets/CalendarWidget';
 import { SystemWidget } from '../widgets/SystemWidget';
 import { WeatherWidget, getWeatherIcon } from '../widgets/WeatherWidget';
 import { Equalizer } from './Equalizer';
-import { Settings, Home, Cpu, Activity, Info, Cloud, Compass, Wind, Droplets } from 'lucide-react';
+import { Settings, Home, Cpu, Cloud, Compass, Wind, Droplets } from 'lucide-react';
 import { useIslandStore } from '../../stores/island-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { openSettingsWindow } from '../../lib/tauri-commands';
@@ -177,25 +177,9 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                     animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                     exit={{ opacity: 0, y: -6, filter: 'blur(3px)' }}
                     transition={{ duration: 0.14, ease: 'easeInOut' }}
-                    className="flex flex-col flex-1 min-h-0 justify-between py-1.5 px-2 h-full"
+                    className="flex flex-col flex-1 min-h-0 py-1.5 h-full"
                   >
-                    {/* CPU & RAM progress indicators */}
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-semibold text-white/40 mb-1 flex items-center gap-1.5 uppercase tracking-wider">
-                        <Activity className="w-3.5 h-3.5 text-white/35" />
-                        Resource Monitors
-                      </span>
-                      <SystemWidget stats={systemStats} mode="expanded" />
-                    </div>
-
-                    {/* Unified System Info at the bottom */}
-                    <div className="flex justify-between items-center text-[10px] text-white/35 border-t border-white/[0.06] pt-2.5">
-                      <span className="flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 text-white/35" />
-                        Operating System
-                      </span>
-                      <span className="text-white/60 font-medium font-sans">Windows Desktop</span>
-                    </div>
+                    <SystemWidget stats={systemStats} mode="expanded" />
                   </motion.div>
                 )}
 
