@@ -519,6 +519,7 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
     let mut current_end: Option<String> = None;
     let mut current_rrule: Option<String> = None;
     let mut current_exdates: Vec<String> = Vec::new();
+    let mut current_status: Option<String> = None;
     let mut in_event = false;
 
     for line in lines {
@@ -531,21 +532,25 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
             current_end = None;
             current_rrule = None;
             current_exdates.clear();
+            current_status = None;
         } else if line.starts_with("END:VEVENT") {
             if in_event {
                 let id = current_id.clone().unwrap_or_else(|| format!("event-{}", raw_events.len()));
                 let summary = current_summary.clone().unwrap_or_else(|| "No Title".to_string());
+                let status = current_status.clone().unwrap_or_else(|| "CONFIRMED".to_string());
 
-                if let Some(start_raw) = current_start.clone() {
-                    if let Some(end_raw) = current_end.clone() {
-                        raw_events.push(RawEvent {
-                            id,
-                            summary,
-                            start_raw,
-                            end_raw,
-                            rrule: current_rrule.clone(),
-                            exdates: current_exdates.clone(),
-                        });
+                if status.trim().to_uppercase() != "CANCELLED" {
+                    if let Some(start_raw) = current_start.clone() {
+                        if let Some(end_raw) = current_end.clone() {
+                            raw_events.push(RawEvent {
+                                id,
+                                summary,
+                                start_raw,
+                                end_raw,
+                                rrule: current_rrule.clone(),
+                                exdates: current_exdates.clone(),
+                            });
+                        }
                     }
                 }
             }
@@ -563,6 +568,7 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
 
                 match key {
                     "UID" => current_id = Some(val_part.to_string()),
+                    "STATUS" => current_status = Some(val_part.to_string()),
                     "SUMMARY" => {
                         let summary = val_part
                             .replace("\\,", ",")
@@ -698,5 +704,31 @@ mod tests {
         assert!(events[0].start.date_time.as_ref().unwrap().contains("2026-06-29"));
         assert!(events[1].start.date_time.as_ref().unwrap().contains("2026-07-01"));
         assert!(events[2].start.date_time.as_ref().unwrap().contains("2026-07-03"));
+    }
+
+    #[test]
+    fn test_cancelled_status_filtering() {
+        let ics_data = "BEGIN:VCALENDAR\n\
+                        VERSION:2.0\n\
+                        PRODID:-//Google Inc//Google Calendar 70.9054//EN\n\
+                        BEGIN:VEVENT\n\
+                        UID:event-active@google.com\n\
+                        SUMMARY:Active Event\n\
+                        DTSTART:20260701T100000Z\n\
+                        DTEND:20260701T110000Z\n\
+                        STATUS:CONFIRMED\n\
+                        END:VEVENT\n\
+                        BEGIN:VEVENT\n\
+                        UID:event-cancelled@google.com\n\
+                        SUMMARY:Cancelled Event\n\
+                        DTSTART:20260701T120000Z\n\
+                        DTEND:20260701T130000Z\n\
+                        STATUS:CANCELLED\n\
+                        END:VEVENT\n\
+                        END:VCALENDAR";
+
+        let events = parse_ics(ics_data);
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].summary, "Active Event");
     }
 }
