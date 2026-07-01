@@ -9,6 +9,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/eddjnr/aeronotch/releases">
+    <img src="https://img.shields.io/badge/Download-Latest_Release-051265?style=for-the-badge&logo=github" alt="Download Latest Release" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/eddjnr/aeronotch/releases">Download</a> •
   <a href="#features">Features</a> •
   <a href="#tech-stack">Tech Stack</a> •
   <a href="#getting-started">Getting Started</a> •
