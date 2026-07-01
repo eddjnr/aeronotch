@@ -289,7 +289,8 @@ export function SettingsPanel() {
                   General
                 </h1>
                 <p className="text-[13px] text-[#86868b] mt-1">
-                  Configure window positioning, transparency, and launch properties.
+                  Configure window positioning, transparency, and launch
+                  properties.
                 </p>
               </div>
 
@@ -441,7 +442,8 @@ export function SettingsPanel() {
                           Media Player
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Shows track name, artist, sound EQ and timeline progress.
+                          Shows track name, artist, sound EQ and timeline
+                          progress.
                         </span>
                       </div>
                     </div>
@@ -462,7 +464,8 @@ export function SettingsPanel() {
                           Calendar Grid
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Displays the current week schedule and calendar agenda.
+                          Displays the current week schedule and calendar
+                          agenda.
                         </span>
                       </div>
                     </div>
@@ -483,7 +486,8 @@ export function SettingsPanel() {
                           System Monitors
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Monitors realtime CPU/RAM load, battery and connection status.
+                          Monitors realtime CPU/RAM load, battery and connection
+                          status.
                         </span>
                       </div>
                     </div>
@@ -504,7 +508,8 @@ export function SettingsPanel() {
                           Weather Details
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Tracks location temperature, warnings and forecast conditions.
+                          Tracks location temperature, warnings and forecast
+                          conditions.
                         </span>
                       </div>
                     </div>
@@ -554,7 +559,8 @@ export function SettingsPanel() {
                           Quick Apps
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Dock application launching controls in the island panel.
+                          Dock application launching controls in the island
+                          panel.
                         </span>
                       </div>
                     </div>
@@ -574,7 +580,8 @@ export function SettingsPanel() {
                           To-dos & Tasks
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Keep track of active checklists directly from the bezel.
+                          Keep track of active checklists directly from the
+                          bezel.
                         </span>
                       </div>
                     </div>
@@ -690,13 +697,31 @@ export function SettingsPanel() {
                     </span>
                     <ol className="text-xs text-[#555557] leading-relaxed list-decimal list-inside flex flex-col gap-1.5">
                       <li>
-                        Open <strong className="text-[#1d1d1f]">Google Calendar</strong> in your web browser.
+                        Open{" "}
+                        <strong className="text-[#1d1d1f]">
+                          Google Calendar
+                        </strong>{" "}
+                        in your web browser.
                       </li>
                       <li>
-                        Hover over your calendar name in the left list, click the <strong className="text-[#1d1d1f]">3 dots</strong> icon, and choose <strong className="text-[#1d1d1f]">Settings and sharing</strong>.
+                        Hover over your calendar name in the left list, click
+                        the <strong className="text-[#1d1d1f]">3 dots</strong>{" "}
+                        icon, and choose{" "}
+                        <strong className="text-[#1d1d1f]">
+                          Settings and sharing
+                        </strong>
+                        .
                       </li>
                       <li>
-                        Scroll down to the <strong className="text-[#1d1d1f]">Integrate calendar</strong> section and copy the <strong className="text-[#1d1d1f]">Secret address in iCal format</strong>.
+                        Scroll down to the{" "}
+                        <strong className="text-[#1d1d1f]">
+                          Integrate calendar
+                        </strong>{" "}
+                        section and copy the{" "}
+                        <strong className="text-[#1d1d1f]">
+                          Secret address in iCal format
+                        </strong>
+                        .
                       </li>
                     </ol>
                   </div>

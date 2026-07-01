@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { IslandSettings } from '../types';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { IslandSettings } from "../types";
 
 interface SettingsState extends IslandSettings {
   updateSetting: <K extends keyof IslandSettings>(
@@ -11,13 +11,13 @@ interface SettingsState extends IslandSettings {
 }
 
 const DEFAULT_SETTINGS: IslandSettings = {
-  position: 'top-center',
+  position: "top-center",
   showMusic: true,
   showCalendar: true,
   showSystem: true,
   showWeather: true,
   showClock: true,
-  opacity: 0.92,
+  opacity: 1,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -27,6 +27,6 @@ export const useSettingsStore = create<SettingsState>()(
       updateSetting: (key, value) => set({ [key]: value }),
       resetSettings: () => set(DEFAULT_SETTINGS),
     }),
-    { name: 'winotch-settings' },
+    { name: "aeronotch-settings" },
   ),
 );
