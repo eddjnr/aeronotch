@@ -29,15 +29,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
     getCalendarEvents()
       .then((payload) => {
         if (payload && Array.isArray(payload.items)) {
-          const now = Date.now();
-          const upcoming = payload.items
-            .filter((item: any) => {
-              const end = item.end?.dateTime ? new Date(item.end.dateTime).getTime() : 0;
-              const allDayEnd = item.end?.date ? new Date(item.end.date).getTime() : 0;
-              return (end || allDayEnd) > now;
-            })
-            .slice(0, 10);
-          setEvents(upcoming);
+          setEvents(payload.items);
         }
       })
       .catch(console.error)
@@ -51,15 +43,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
     listen('google-calendar-events', (event: any) => {
       const payload = event.payload;
       if (payload && Array.isArray(payload.items)) {
-        const now = Date.now();
-        const upcoming = payload.items
-          .filter((item: any) => {
-            const end = item.end?.dateTime ? new Date(item.end.dateTime).getTime() : 0;
-            const allDayEnd = item.end?.date ? new Date(item.end.date).getTime() : 0;
-            return (end || allDayEnd) > now;
-          })
-          .slice(0, 10);
-        setEvents(upcoming);
+        setEvents(payload.items);
       }
     }).then((fn) => {
       unlisten = fn;
