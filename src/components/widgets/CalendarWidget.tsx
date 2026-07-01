@@ -98,33 +98,33 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
   if (mode !== 'expanded') return null;
 
   return (
-    <div className="flex flex-col gap-2 h-full justify-between select-none">
+    <div className="flex flex-col gap-3.5 h-full justify-between select-none">
       <div>
         {/* Month/Year header */}
-        <div className="flex items-baseline gap-1.5 mb-1.5">
-          <span className="text-sm font-semibold text-white">{weekData.month}</span>
-          <span className="text-[10px] text-white/40">{weekData.year}</span>
+        <div className="flex items-baseline gap-2 mb-2">
+          <span className="text-sm font-bold text-white tracking-tight">{weekData.month}</span>
+          <span className="text-[10px] font-medium text-white/45">{weekData.year}</span>
         </div>
 
         {/* Week grid */}
-        <div className="flex gap-0.5">
+        <div className="flex gap-1">
           {weekData.days.map((day) => (
             <div
               key={`${day.name}-${day.number}`}
-              className="flex flex-col items-center gap-0.5 w-[36px]"
+              className="flex flex-col items-center gap-1 w-[35px]"
             >
               <span
-                className={`text-[9px] font-semibold ${
+                className={`text-[9px] font-semibold tracking-wide ${
                   day.isToday ? 'text-white' : 'text-white/40'
                 }`}
               >
                 {day.name}
               </span>
               <div
-                className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-semibold transition-colors ${
+                className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold transition-all duration-150 ${
                   day.isToday
-                    ? 'bg-white text-black'
-                    : 'text-white/70 hover:bg-white/5'
+                    ? 'bg-white text-black shadow-[0_2px_8px_rgba(255,255,255,0.25)]'
+                    : 'text-white/75 hover:bg-white/10'
                 }`}
               >
                 {day.number}
@@ -135,25 +135,25 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
       </div>
 
       {/* Events section */}
-      <div className="flex flex-col gap-1.5 mt-2 border-t border-white/5 pt-2">
+      <div className="flex flex-col gap-2 mt-2 border-t border-white/5 pt-2.5">
         {events.length > 0 ? (
           events.map((event) => (
-            <div key={event.id} className="flex items-center justify-between text-[9px] text-white/70">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#4285f4] flex-shrink-0" />
-                <span className="truncate font-medium max-w-[150px] text-white">
+            <div key={event.id} className="flex items-center justify-between text-[11px] text-white/90">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-0.5 h-3.5 rounded-full bg-[#007aff] flex-shrink-0" />
+                <span className="truncate font-semibold max-w-[170px] text-white/95">
                   {event.summary || 'No Title'}
                 </span>
               </div>
-              <span className="text-[8px] text-white/40 font-mono flex-shrink-0">
+              <span className="text-[10px] text-white/50 font-mono flex-shrink-0 font-medium">
                 {formatEventTime(event)}
               </span>
             </div>
           ))
         ) : (
-          <div className="flex items-center gap-1.5 text-[9px] text-white/40">
-            <CalendarCheck className="w-3.5 h-3.5 text-white/20" />
-            <span>No upcoming events</span>
+          <div className="flex items-center gap-2 text-[10px] text-white/45">
+            <CalendarCheck className="w-3.5 h-3.5 text-white/25" />
+            <span className="font-medium">No upcoming events</span>
           </div>
         )}
       </div>
