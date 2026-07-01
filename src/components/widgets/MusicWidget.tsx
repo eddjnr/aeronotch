@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SkipBack, Play, Pause, SkipForward, Music, Shuffle, Star } from 'lucide-react';
 import { SPRING } from '../../lib/animation-config';
@@ -12,6 +13,14 @@ interface MusicWidgetProps {
 }
 
 export function MusicWidget({ media, mode }: MusicWidgetProps) {
+  const [localIsPlaying, setLocalIsPlaying] = useState(media?.is_playing ?? false);
+
+  useEffect(() => {
+    if (media) {
+      setLocalIsPlaying(media.is_playing);
+    }
+  }, [media?.is_playing]);
+
   if (!media) {
     if (mode === 'expanded') {
       return (
@@ -81,7 +90,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
         </div>
 
         {/* Mini Real-time Equalizer */}
-        {media.is_playing && (
+        {localIsPlaying && (
           <div className="flex-shrink-0 pr-1 select-none">
             <Equalizer isPlaying={true} barCount={6} />
           </div>
@@ -93,7 +102,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
         <ProgressBar
           current={media.position_seconds}
           total={media.duration_seconds}
-          isPlaying={media.is_playing}
+          isPlaying={localIsPlaying}
           onSeek={(pos) => {
             mediaSeek(pos).catch(console.error);
           }}
@@ -119,7 +128,14 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
 
         <motion.button
           type="button"
-          onClick={() => mediaControl('PlayPause')}
+          onClick={() => {
+            const nextState = !localIsPlaying;
+            setLocalIsPlaying(nextState);
+            mediaControl('PlayPause').catch((err) => {
+              console.error(err);
+              setLocalIsPlaying(!nextState);
+            });
+          }}
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.90 }}
           transition={SPRING.button}
@@ -127,14 +143,14 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={media.is_playing ? 'pause' : 'play'}
-              initial={{ opacity: 0, scale: 0.6, rotate: media.is_playing ? -30 : 30 }}
+              key={localIsPlaying ? 'pause' : 'play'}
+              initial={{ opacity: 0, scale: 0.6, rotate: localIsPlaying ? -30 : 30 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.6, rotate: media.is_playing ? 30 : -30 }}
+              exit={{ opacity: 0, scale: 0.6, rotate: localIsPlaying ? 30 : -30 }}
               transition={{ duration: 0.12, ease: 'easeOut' }}
               className="flex items-center justify-center"
             >
-              {media.is_playing ? (
+              {localIsPlaying ? (
                 <Pause className="w-6 h-6" fill="currentColor" />
               ) : (
                 <Play className="w-6 h-6" fill="currentColor" />
