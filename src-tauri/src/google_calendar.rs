@@ -30,6 +30,7 @@ struct RawEvent {
     start_raw: String,
     end_raw: String,
     rrule: Option<String>,
+    exdates: Vec<String>,
 }
 
 struct ParsedRRule {
@@ -210,6 +211,15 @@ fn expand_raw_events(
 
         let start_is_all_day = raw.start_raw.trim().len() == 8;
 
+        // Parse exception dates (EXDATE)
+        let mut parsed_exdates = Vec::new();
+        for ex in &raw.exdates {
+            if let Some(ex_dt) = ics_to_datetime(ex) {
+                let ex_is_all_day = ex.trim().len() == 8;
+                parsed_exdates.push((ex_dt, ex_is_all_day));
+            }
+        }
+
         if let Some(rrule_str) = raw.rrule.as_ref() {
             if let Some(rrule) = parse_rrule(rrule_str) {
                 let duration = base_end.signed_duration_since(base_start);
@@ -314,6 +324,19 @@ fn expand_raw_events(
                             };
 
                             if rrule.byday.contains(&weekday_str.to_string()) {
+                                // Check if this specific day is excluded via EXDATE
+                                let is_excluded = parsed_exdates.iter().any(|(ex_dt, ex_is_all_day)| {
+                                    if *ex_is_all_day || start_is_all_day {
+                                        ex_dt.year() == day.year() && ex_dt.month() == day.month() && ex_dt.day() == day.day()
+                                    } else {
+                                        ex_dt.timestamp() == day.timestamp()
+                                    }
+                                });
+
+                                if is_excluded {
+                                    continue;
+                                }
+
                                 occurrence_count += 1;
                                 if let Some(max_count) = rrule.count {
                                     if occurrence_count > max_count {
@@ -366,7 +389,16 @@ fn expand_raw_events(
                             rrule.byday.contains(&weekday_str.to_string())
                         };
 
-                        if matches_byday {
+                        // Check if this occurrence is excluded via EXDATE
+                        let is_excluded = parsed_exdates.iter().any(|(ex_dt, ex_is_all_day)| {
+                            if *ex_is_all_day || start_is_all_day {
+                                ex_dt.year() == current_start.year() && ex_dt.month() == current_start.month() && ex_dt.day() == current_start.day()
+                            } else {
+                                ex_dt.timestamp() == current_start.timestamp()
+                            }
+                        });
+
+                        if !is_excluded && matches_byday {
                             occurrence_count += 1;
 
                             if current_end >= range_start && current_start <= range_end {
@@ -486,6 +518,7 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
     let mut current_start: Option<String> = None;
     let mut current_end: Option<String> = None;
     let mut current_rrule: Option<String> = None;
+    let mut current_exdates: Vec<String> = Vec::new();
     let mut in_event = false;
 
     for line in lines {
@@ -497,6 +530,7 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
             current_start = None;
             current_end = None;
             current_rrule = None;
+            current_exdates.clear();
         } else if line.starts_with("END:VEVENT") {
             if in_event {
                 let id = current_id.clone().unwrap_or_else(|| format!("event-{}", raw_events.len()));
@@ -510,6 +544,7 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
                             start_raw,
                             end_raw,
                             rrule: current_rrule.clone(),
+                            exdates: current_exdates.clone(),
                         });
                     }
                 }
@@ -539,6 +574,14 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
                     "DTSTART" => current_start = Some(val_part.to_string()),
                     "DTEND" => current_end = Some(val_part.to_string()),
                     "RRULE" => current_rrule = Some(val_part.to_string()),
+                    "EXDATE" => {
+                        for ex in val_part.split(',') {
+                            let trimmed = ex.trim();
+                            if !trimmed.is_empty() {
+                                current_exdates.push(trimmed.to_string());
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -598,6 +641,7 @@ mod tests {
             start_raw: "20260601T070000".to_string(), // Monday, June 1, 2026
             end_raw: "20260601T080000".to_string(),
             rrule: Some("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR".to_string()),
+            exdates: vec![],
         };
 
         // We want to expand from June 28, 2026 to July 4, 2026
@@ -623,5 +667,36 @@ mod tests {
         assert!(events[2].start.date_time.as_ref().unwrap().contains("2026-07-01"));
         assert!(events[3].start.date_time.as_ref().unwrap().contains("2026-07-02"));
         assert!(events[4].start.date_time.as_ref().unwrap().contains("2026-07-03"));
+    }
+
+    #[test]
+    fn test_recurrence_weekly_exdate() {
+        let raw = RawEvent {
+            id: "test-event-ex".to_string(),
+            summary: "Weekly Routine with Exclusion".to_string(),
+            start_raw: "20260601T070000".to_string(), // Monday, June 1, 2026
+            end_raw: "20260601T080000".to_string(),
+            rrule: Some("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR".to_string()),
+            exdates: vec![
+                "20260630T070000".to_string(), // Exclude Tuesday, June 30
+                "20260702T070000".to_string(), // Exclude Thursday, July 2
+            ],
+        };
+
+        let range_start = chrono::Utc.with_ymd_and_hms(2026, 6, 28, 0, 0, 0).unwrap();
+        let range_end = chrono::Utc.with_ymd_and_hms(2026, 7, 4, 23, 59, 59).unwrap();
+
+        let events = expand_raw_events(vec![raw], range_start, range_end);
+
+        // Expected occurrences:
+        // June 29 (Mon) -> Yes
+        // June 30 (Tue) -> Excluded
+        // July 1 (Wed) -> Yes
+        // July 2 (Thu) -> Excluded
+        // July 3 (Fri) -> Yes
+        assert_eq!(events.len(), 3);
+        assert!(events[0].start.date_time.as_ref().unwrap().contains("2026-06-29"));
+        assert!(events[1].start.date_time.as_ref().unwrap().contains("2026-07-01"));
+        assert!(events[2].start.date_time.as_ref().unwrap().contains("2026-07-03"));
     }
 }
