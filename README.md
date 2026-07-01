@@ -22,6 +22,10 @@ AeroNotch brings the premium, organic feel of the iOS Dynamic Island straight to
 
 ---
 
+<p align="center">
+  <img width="1280" height="540" alt="Demo AeroNotch GIF" src="https://github.com/user-attachments/assets/7dd23504-eaa7-4d46-822b-f73ba39e50f1" />
+</p>
+
 ## 🎨 Preview & Aesthetics
 
 AeroNotch is built around Apple-like design principles:
