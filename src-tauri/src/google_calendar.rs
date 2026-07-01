@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::Manager;
 use tauri::Emitter;
-use chrono::{Datelike, TimeZone};
+use chrono::{Datelike, TimeZone, Timelike};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CalendarConfig {
@@ -24,6 +24,7 @@ pub struct CalendarEventTime {
     pub date: Option<String>,
 }
 
+#[derive(Clone)]
 struct RawEvent {
     id: String,
     summary: String,
@@ -31,6 +32,9 @@ struct RawEvent {
     end_raw: String,
     rrule: Option<String>,
     exdates: Vec<String>,
+    recurrence_id: Option<String>,
+    status: Option<String>,
+    is_declined: bool,
 }
 
 struct ParsedRRule {
@@ -199,7 +203,33 @@ fn expand_raw_events(
 ) -> Vec<CalendarEvent> {
     let mut expanded = Vec::new();
 
+    // Map to quickly look up recurrence overrides by master event UID/ID.
+    // Key: UID/ID, Value: list of (recurrence_id_dt, RawEvent override)
+    let mut overrides_map: std::collections::HashMap<String, Vec<(chrono::DateTime<chrono::Utc>, RawEvent)>> = std::collections::HashMap::new();
+
+    let mut masters = Vec::new();
+    let mut overrides = Vec::new();
+
     for raw in raw_events {
+        if let Some(ref rec_id_raw) = raw.recurrence_id {
+            if let Some(rec_dt) = ics_to_datetime(rec_id_raw) {
+                overrides_map.entry(raw.id.clone()).or_insert_with(Vec::new).push((rec_dt, raw.clone()));
+                overrides.push(raw);
+            } else {
+                masters.push(raw);
+            }
+        } else {
+            masters.push(raw);
+        }
+    }
+
+    for raw in masters {
+        // Skip master events that are cancelled or declined at the series level
+        let status = raw.status.clone().unwrap_or_else(|| "CONFIRMED".to_string());
+        if status.trim().to_uppercase() == "CANCELLED" || raw.is_declined {
+            continue;
+        }
+
         let base_start = match ics_to_datetime(&raw.start_raw) {
             Some(dt) => dt,
             None => continue,
@@ -337,6 +367,25 @@ fn expand_raw_events(
                                     continue;
                                 }
 
+                                // Check if there is a recurrence override for this occurrence
+                                let has_override = if let Some(ov_list) = overrides_map.get(&raw.id) {
+                                    ov_list.iter().any(|(rec_dt, _)| {
+                                        let rec_local = rec_dt.with_timezone(&chrono::Local);
+                                        let day_local = day.with_timezone(&chrono::Local);
+                                        rec_local.year() == day_local.year() &&
+                                        rec_local.month() == day_local.month() &&
+                                        rec_local.day() == day_local.day() &&
+                                        rec_local.hour() == day_local.hour() &&
+                                        rec_local.minute() == day_local.minute()
+                                    })
+                                } else {
+                                    false
+                                };
+
+                                if has_override {
+                                    continue;
+                                }
+
                                 occurrence_count += 1;
                                 if let Some(max_count) = rrule.count {
                                     if occurrence_count > max_count {
@@ -398,7 +447,22 @@ fn expand_raw_events(
                             }
                         });
 
-                        if !is_excluded && matches_byday {
+                        // Check if there is a recurrence override for this occurrence
+                        let has_override = if let Some(ov_list) = overrides_map.get(&raw.id) {
+                            ov_list.iter().any(|(rec_dt, _)| {
+                                let rec_local = rec_dt.with_timezone(&chrono::Local);
+                                let current_start_local = current_start.with_timezone(&chrono::Local);
+                                rec_local.year() == current_start_local.year() &&
+                                rec_local.month() == current_start_local.month() &&
+                                rec_local.day() == current_start_local.day() &&
+                                rec_local.hour() == current_start_local.hour() &&
+                                rec_local.minute() == current_start_local.minute()
+                            })
+                        } else {
+                            false
+                        };
+
+                        if !is_excluded && matches_byday && !has_override {
                             occurrence_count += 1;
 
                             if current_end >= range_start && current_start <= range_end {
@@ -459,30 +523,73 @@ fn expand_raw_events(
                 }
             }
         } else {
-            if base_end >= range_start && base_start <= range_end {
-                let start_val = if start_is_all_day {
-                    base_start.format("%Y-%m-%d").to_string()
-                } else {
-                    base_start.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-                };
-                let end_val = if start_is_all_day {
-                    base_end.format("%Y-%m-%d").to_string()
-                } else {
-                    base_end.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-                };
+            // Check if this single event is cancelled or declined
+            let status = raw.status.clone().unwrap_or_else(|| "CONFIRMED".to_string());
+            if status.trim().to_uppercase() != "CANCELLED" && !raw.is_declined {
+                if base_end >= range_start && base_start <= range_end {
+                    let start_val = if start_is_all_day {
+                        base_start.format("%Y-%m-%d").to_string()
+                    } else {
+                        base_start.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                    };
+                    let end_val = if start_is_all_day {
+                        base_end.format("%Y-%m-%d").to_string()
+                    } else {
+                        base_end.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                    };
 
-                expanded.push(CalendarEvent {
-                    id: raw.id.clone(),
-                    summary: raw.summary.clone(),
-                    start: CalendarEventTime {
-                        date_time: if !start_is_all_day { Some(start_val.clone()) } else { None },
-                        date: if start_is_all_day { Some(start_val) } else { None },
-                    },
-                    end: CalendarEventTime {
-                        date_time: if !start_is_all_day { Some(end_val.clone()) } else { None },
-                        date: if start_is_all_day { Some(end_val) } else { None },
-                    },
-                });
+                    expanded.push(CalendarEvent {
+                        id: raw.id.clone(),
+                        summary: raw.summary.clone(),
+                        start: CalendarEventTime {
+                            date_time: if !start_is_all_day { Some(start_val.clone()) } else { None },
+                            date: if start_is_all_day { Some(start_val) } else { None },
+                        },
+                        end: CalendarEventTime {
+                            date_time: if !start_is_all_day { Some(end_val.clone()) } else { None },
+                            date: if start_is_all_day { Some(end_val) } else { None },
+                        },
+                    });
+                }
+            }
+        }
+    }
+
+    // Now process all active overrides
+    for raw in overrides {
+        let status = raw.status.clone().unwrap_or_else(|| "CONFIRMED".to_string());
+        if status.trim().to_uppercase() == "CANCELLED" || raw.is_declined {
+            continue; // Skipped override (deleted occurrence)
+        }
+
+        if let Some(base_start) = ics_to_datetime(&raw.start_raw) {
+            if let Some(base_end) = ics_to_datetime(&raw.end_raw) {
+                if base_end >= range_start && base_start <= range_end {
+                    let start_is_all_day = raw.start_raw.trim().len() == 8;
+                    let start_val = if start_is_all_day {
+                        base_start.format("%Y-%m-%d").to_string()
+                    } else {
+                        base_start.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                    };
+                    let end_val = if start_is_all_day {
+                        base_end.format("%Y-%m-%d").to_string()
+                    } else {
+                        base_end.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                    };
+
+                    expanded.push(CalendarEvent {
+                        id: format!("{}-override-{}", raw.id, base_start.timestamp()),
+                        summary: raw.summary.clone(),
+                        start: CalendarEventTime {
+                            date_time: if !start_is_all_day { Some(start_val.clone()) } else { None },
+                            date: if start_is_all_day { Some(start_val) } else { None },
+                        },
+                        end: CalendarEventTime {
+                            date_time: if !start_is_all_day { Some(end_val.clone()) } else { None },
+                            date: if start_is_all_day { Some(end_val) } else { None },
+                        },
+                    });
+                }
             }
         }
     }
@@ -534,6 +641,7 @@ pub fn parse_ics(text: &str, owner_email: Option<&str>) -> Vec<CalendarEvent> {
     let mut current_rrule: Option<String> = None;
     let mut current_exdates: Vec<String> = Vec::new();
     let mut current_status: Option<String> = None;
+    let mut current_recurrence_id: Option<String> = None;
     let mut is_declined = false;
     let mut in_event = false;
 
@@ -548,25 +656,27 @@ pub fn parse_ics(text: &str, owner_email: Option<&str>) -> Vec<CalendarEvent> {
             current_rrule = None;
             current_exdates.clear();
             current_status = None;
+            current_recurrence_id = None;
             is_declined = false;
         } else if line.starts_with("END:VEVENT") {
             if in_event {
                 let id = current_id.clone().unwrap_or_else(|| format!("event-{}", raw_events.len()));
                 let summary = current_summary.clone().unwrap_or_else(|| "No Title".to_string());
-                let status = current_status.clone().unwrap_or_else(|| "CONFIRMED".to_string());
+                let status = current_status.clone();
 
-                if status.trim().to_uppercase() != "CANCELLED" && !is_declined {
-                    if let Some(start_raw) = current_start.clone() {
-                        if let Some(end_raw) = current_end.clone() {
-                            raw_events.push(RawEvent {
-                                id,
-                                summary,
-                                start_raw,
-                                end_raw,
-                                rrule: current_rrule.clone(),
-                                exdates: current_exdates.clone(),
-                            });
-                        }
+                if let Some(start_raw) = current_start.clone() {
+                    if let Some(end_raw) = current_end.clone() {
+                        raw_events.push(RawEvent {
+                            id,
+                            summary,
+                            start_raw,
+                            end_raw,
+                            rrule: current_rrule.clone(),
+                            exdates: current_exdates.clone(),
+                            recurrence_id: current_recurrence_id.clone(),
+                            status,
+                            is_declined,
+                        });
                     }
                 }
             }
@@ -604,6 +714,7 @@ pub fn parse_ics(text: &str, owner_email: Option<&str>) -> Vec<CalendarEvent> {
                             }
                         }
                     }
+                    "RECURRENCE-ID" => current_recurrence_id = Some(val_part.to_string()),
                     "ATTENDEE" => {
                         if let Some(owner) = owner_email {
                             let line_upper = line.to_uppercase();
@@ -674,6 +785,9 @@ mod tests {
             end_raw: "20260601T080000".to_string(),
             rrule: Some("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR".to_string()),
             exdates: vec![],
+            recurrence_id: None,
+            status: None,
+            is_declined: false,
         };
 
         // We want to expand from June 28, 2026 to July 4, 2026
@@ -713,6 +827,9 @@ mod tests {
                 "20260630T070000".to_string(), // Exclude Tuesday, June 30
                 "20260702T070000".to_string(), // Exclude Thursday, July 2
             ],
+            recurrence_id: None,
+            status: None,
+            is_declined: false,
         };
 
         let range_start = chrono::Utc.with_ymd_and_hms(2026, 6, 28, 0, 0, 0).unwrap();
@@ -781,5 +898,35 @@ mod tests {
         let events = parse_ics(ics_data, Some("user@example.com"));
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].summary, "Accepted Event");
+    }
+
+    #[test]
+    fn test_recurrence_override_cancellation() {
+        let ics_data = "BEGIN:VCALENDAR\n\
+                        VERSION:2.0\n\
+                        BEGIN:VEVENT\n\
+                        UID:recurring-1@google.com\n\
+                        SUMMARY:Weekly Sync\n\
+                        DTSTART:20260602T100000\n\
+                        DTEND:20260602T110000\n\
+                        RRULE:FREQ=WEEKLY;BYDAY=TU\n\
+                        END:VEVENT\n\
+                        BEGIN:VEVENT\n\
+                        UID:recurring-1@google.com\n\
+                        SUMMARY:Weekly Sync\n\
+                        DTSTART:20260630T100000\n\
+                        DTEND:20260630T110000\n\
+                        RECURRENCE-ID:20260630T100000\n\
+                        STATUS:CANCELLED\n\
+                        END:VEVENT\n\
+                        END:VCALENDAR";
+
+        let events = parse_ics(ics_data, None);
+        // June 30, 2026 should be excluded because of the recurrence override cancellation.
+        let has_june_30 = events.iter().any(|e| {
+            let start = e.start.date_time.as_ref().or(e.start.date.as_ref()).unwrap();
+            start.contains("2026-06-30")
+        });
+        assert!(!has_june_30, "June 30 occurrence should be excluded due to cancellation override");
     }
 }
