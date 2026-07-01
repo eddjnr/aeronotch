@@ -288,15 +288,14 @@ export function SettingsPanel() {
                 <h1 className="text-[22px] font-bold text-[#1d1d1f] tracking-tight">
                   General
                 </h1>
-                <p className="text-[10px] text-[#86868b] mt-0.5">
-                  Configure window positioning, transparency, and launch
-                  properties.
+                <p className="text-[13px] text-[#86868b] mt-1">
+                  Configure window positioning, transparency, and launch properties.
                 </p>
               </div>
 
               {/* iOS-Style Settings Group (Appearance) */}
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-1.5">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
                   Appearance & Placement
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
@@ -306,7 +305,7 @@ export function SettingsPanel() {
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         Screen Position
                       </span>
-                      <span className="text-[10px] text-[#86868b] mt-0.5">
+                      <span className="text-xs text-[#86868b] mt-0.5">
                         Choose which part of the bezel the notch attaches to.
                       </span>
                     </div>
@@ -316,7 +315,7 @@ export function SettingsPanel() {
                           <button
                             key={pos}
                             onClick={() => handlePositionChange(pos)}
-                            className={`px-3 py-1 text-[10px] font-semibold rounded-md transition-all cursor-pointer outline-none ${
+                            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer outline-none ${
                               settings.position === pos
                                 ? "bg-white shadow-[0_1px_2px_rgba(0,0,0,0.1)] text-[#1d1d1f]"
                                 : "text-[#555557] hover:text-[#1d1d1f]"
@@ -339,7 +338,7 @@ export function SettingsPanel() {
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         Island Opacity
                       </span>
-                      <span className="text-[10px] text-[#86868b] mt-0.5">
+                      <span className="text-xs text-[#86868b] mt-0.5">
                         Set the translucency level of the island backdrop.
                       </span>
                     </div>
@@ -353,7 +352,7 @@ export function SettingsPanel() {
                         onChange={handleOpacityChange}
                         className="flex-1 h-1 bg-[#e8e8ea] rounded-lg appearance-none cursor-pointer accent-[#007aff] outline-none"
                       />
-                      <span className="font-mono font-semibold text-[10px] text-[#1d1d1f] w-8 text-right">
+                      <span className="font-mono font-semibold text-xs text-[#1d1d1f] w-8 text-right">
                         {Math.round(settings.opacity * 100)}%
                       </span>
                     </div>
@@ -363,7 +362,7 @@ export function SettingsPanel() {
 
               {/* iOS-Style Settings Group (System) */}
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-1.5">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
                   System Preferences
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
@@ -373,7 +372,7 @@ export function SettingsPanel() {
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         Launch on Startup
                       </span>
-                      <span className="text-[10px] text-[#86868b] mt-0.5">
+                      <span className="text-xs text-[#86868b] mt-0.5">
                         Start AeroNotch automatically when logging into Windows.
                       </span>
                     </div>
@@ -389,13 +388,13 @@ export function SettingsPanel() {
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         Reset to Defaults
                       </span>
-                      <span className="text-[10px] text-[#86868b] mt-0.5">
+                      <span className="text-xs text-[#86868b] mt-0.5">
                         Restore all settings to their original factory values.
                       </span>
                     </div>
                     <button
                       onClick={handleResetSettings}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-red-500 text-[10px] font-semibold transition-all cursor-pointer outline-none"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-red-500 text-xs font-semibold transition-all cursor-pointer outline-none"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Reset Settings</span>
@@ -420,14 +419,14 @@ export function SettingsPanel() {
                 <h1 className="text-[22px] font-bold text-[#1d1d1f] tracking-tight">
                   Widgets
                 </h1>
-                <p className="text-[10px] text-[#86868b] mt-0.5">
+                <p className="text-[13px] text-[#86868b] mt-1">
                   Enable or disable individual information layers on the island.
                 </p>
               </div>
 
               {/* iOS-Style Settings Group (Widgets List) */}
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-1.5">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
                   Active Modules
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
@@ -441,9 +440,8 @@ export function SettingsPanel() {
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           Media Player
                         </span>
-                        <span className="text-[9px] text-[#86868b] mt-0.5">
-                          Shows track name, artist, sound EQ and timeline
-                          progress.
+                        <span className="text-xs text-[#86868b] mt-0.5">
+                          Shows track name, artist, sound EQ and timeline progress.
                         </span>
                       </div>
                     </div>
@@ -463,9 +461,8 @@ export function SettingsPanel() {
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           Calendar Grid
                         </span>
-                        <span className="text-[9px] text-[#86868b] mt-0.5">
-                          Displays the current week schedule and calendar
-                          agenda.
+                        <span className="text-xs text-[#86868b] mt-0.5">
+                          Displays the current week schedule and calendar agenda.
                         </span>
                       </div>
                     </div>
@@ -485,9 +482,8 @@ export function SettingsPanel() {
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           System Monitors
                         </span>
-                        <span className="text-[9px] text-[#86868b] mt-0.5">
-                          Monitors realtime CPU/RAM load, battery and connection
-                          status.
+                        <span className="text-xs text-[#86868b] mt-0.5">
+                          Monitors realtime CPU/RAM load, battery and connection status.
                         </span>
                       </div>
                     </div>
@@ -507,9 +503,8 @@ export function SettingsPanel() {
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           Weather Details
                         </span>
-                        <span className="text-[9px] text-[#86868b] mt-0.5">
-                          Tracks location temperature, warnings and forecast
-                          conditions.
+                        <span className="text-xs text-[#86868b] mt-0.5">
+                          Tracks location temperature, warnings and forecast conditions.
                         </span>
                       </div>
                     </div>
@@ -529,7 +524,7 @@ export function SettingsPanel() {
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           Digital Clock
                         </span>
-                        <span className="text-[9px] text-[#86868b] mt-0.5">
+                        <span className="text-xs text-[#86868b] mt-0.5">
                           Sleek top bar system clock visible in compact states.
                         </span>
                       </div>
@@ -544,7 +539,7 @@ export function SettingsPanel() {
 
               {/* iOS-Style Settings Group (Upcoming Lists) */}
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-1.5">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
                   Upcoming Extensions
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden opacity-45 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
@@ -558,13 +553,12 @@ export function SettingsPanel() {
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           Quick Apps
                         </span>
-                        <span className="text-[9px] text-[#86868b] mt-0.5">
-                          Dock application launching controls in the island
-                          panel.
+                        <span className="text-xs text-[#86868b] mt-0.5">
+                          Dock application launching controls in the island panel.
                         </span>
                       </div>
                     </div>
-                    <span className="text-[8px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
+                    <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
                       Planned
                     </span>
                   </div>
@@ -579,13 +573,12 @@ export function SettingsPanel() {
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           To-dos & Tasks
                         </span>
-                        <span className="text-[9px] text-[#86868b] mt-0.5">
-                          Keep track of active checklists directly from the
-                          bezel.
+                        <span className="text-xs text-[#86868b] mt-0.5">
+                          Keep track of active checklists directly from the bezel.
                         </span>
                       </div>
                     </div>
-                    <span className="text-[8px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
+                    <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
                       Planned
                     </span>
                   </div>
@@ -608,24 +601,24 @@ export function SettingsPanel() {
                 <h1 className="text-[22px] font-bold text-[#1d1d1f] tracking-tight">
                   Integrations
                 </h1>
-                <p className="text-[10px] text-[#86868b] mt-0.5">
+                <p className="text-[13px] text-[#86868b] mt-1">
                   Link with cloud calendars using direct iCal/ICS feed URLs.
                 </p>
               </div>
 
               {/* Service Cards */}
               <div className="flex flex-col gap-4">
-                <div className="bg-white rounded-xl shadow-sm border border-black/5 overflow-hidden p-5 flex flex-col gap-4">
+                <div className="bg-white rounded-xl shadow-sm border border-black/5 overflow-hidden p-5 flex flex-col gap-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3.5">
-                      <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#007aff] text-white flex-shrink-0">
+                      <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#007aff] text-white flex-shrink-0 shadow-[0_2px_8px_rgba(0,122,255,0.25)]">
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-bold text-[#1d1d1f]">
+                        <span className="text-sm font-semibold text-[#1d1d1f]">
                           Calendar Subscription
                         </span>
-                        <span className="text-[9px] text-[#86868b] mt-0.5">
+                        <span className="text-xs text-[#86868b] mt-0.5">
                           {googleStatus?.connected
                             ? "Connected and syncing in real-time"
                             : "Display schedules from Google, Outlook, or Apple Calendar."}
@@ -637,7 +630,7 @@ export function SettingsPanel() {
                       {googleStatus?.connected && (
                         <button
                           onClick={handleDisconnectGoogle}
-                          className="bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 text-[#ff3b30] text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                          className="bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 text-[#ff3b30] text-xs font-semibold px-3.5 py-1.5 rounded-lg cursor-pointer transition-colors"
                         >
                           Disconnect
                         </button>
@@ -646,8 +639,8 @@ export function SettingsPanel() {
                   </div>
 
                   {!googleStatus?.connected ? (
-                    <div className="flex flex-col gap-2.5">
-                      <label className="text-[9px] text-[#555557] font-semibold">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-medium text-[#555557]">
                         Secret Address in iCal format (.ics Link)
                       </label>
                       <div className="flex gap-2">
@@ -656,54 +649,54 @@ export function SettingsPanel() {
                           value={calendarUrl}
                           onChange={(e) => setCalendarUrl(e.target.value)}
                           placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
-                          className="flex-1 bg-[#f5f5f7] border border-black/10 rounded-lg px-3 py-1.5 text-[10px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#051265] transition-all"
+                          className="flex-1 bg-[#f5f5f7] border border-black/10 rounded-lg px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-[#86868b] outline-none focus:bg-white focus:border-[#007aff] focus:ring-1 focus:ring-[#007aff] transition-all"
                         />
                         <button
                           onClick={handleConnectGoogle}
                           disabled={isConnecting}
-                          className="bg-[#051265] hover:bg-[#051265]/90 text-white text-[10px] font-bold px-4 py-1.5 rounded-lg cursor-pointer transition-colors disabled:opacity-50 flex-shrink-0"
+                          className="bg-[#007aff] hover:bg-[#0062cc] disabled:bg-[#007aff]/50 text-white text-xs font-semibold px-4 py-2 rounded-lg cursor-pointer transition-colors disabled:opacity-50 flex-shrink-0"
                         >
                           {isConnecting ? "Syncing..." : "Sync Calendar"}
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-[#f5f5f7] p-3 rounded-lg border border-black/5 divide-y divide-black/5">
-                      <div className="pb-2">
-                        <span className="text-[8px] text-[#86868b] font-semibold block uppercase">
+                    <div className="bg-[#f5f5f7] p-4 rounded-lg border border-black/5 flex flex-col gap-3">
+                      <div>
+                        <span className="text-[10px] text-[#86868b] font-bold block uppercase tracking-wider">
                           Synced Link
                         </span>
-                        <span className="text-[9px] text-[#1d1d1f] truncate block mt-0.5 font-mono max-w-[400px]">
+                        <span className="text-xs text-[#1d1d1f] break-all block mt-1 font-mono bg-white p-2.5 rounded-md border border-black/5 select-text">
                           {googleStatus.url}
                         </span>
                       </div>
-                      <div className="pt-2 flex items-center gap-1.5 text-[8px] text-[#34c759] font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#34c759] animate-pulse" />
+                      <div className="flex items-center gap-2 text-xs text-[#34c759] font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-[#34c759] animate-pulse" />
                         Active Sync (updates every 15 minutes)
                       </div>
                     </div>
                   )}
 
                   {connectionError && (
-                    <div className="mt-1 p-2 bg-[#ff3b30]/5 text-[#ff3b30] text-[9px] rounded-lg border border-[#ff3b30]/10">
+                    <div className="p-3 bg-[#ff3b30]/5 text-[#ff3b30] text-xs rounded-lg border border-[#ff3b30]/15">
                       {connectionError}
                     </div>
                   )}
 
                   {/* Guideline instructions */}
-                  <div className="border-t border-black/5 pt-3.5">
-                    <span className="text-[9px] font-bold text-[#1d1d1f] block mb-1.5">
+                  <div className="border-t border-black/5 pt-4">
+                    <span className="text-xs font-semibold text-[#1d1d1f] block mb-2">
                       How to find your iCal link:
                     </span>
-                    <ol className="text-[8px] text-[#86868b] leading-relaxed list-decimal list-inside flex flex-col gap-1">
+                    <ol className="text-xs text-[#555557] leading-relaxed list-decimal list-inside flex flex-col gap-1.5">
                       <li>
-                        Open <strong>Google Calendar</strong> in your web browser.
+                        Open <strong className="text-[#1d1d1f]">Google Calendar</strong> in your web browser.
                       </li>
                       <li>
-                        Hover over your calendar name on the left list, click the <strong>3 dots</strong> and choose <strong>Settings and sharing</strong>.
+                        Hover over your calendar name in the left list, click the <strong className="text-[#1d1d1f]">3 dots</strong> icon, and choose <strong className="text-[#1d1d1f]">Settings and sharing</strong>.
                       </li>
                       <li>
-                        Scroll down to <strong>Integrate calendar</strong> and copy the <strong>Secret address in iCal format</strong>.
+                        Scroll down to the <strong className="text-[#1d1d1f]">Integrate calendar</strong> section and copy the <strong className="text-[#1d1d1f]">Secret address in iCal format</strong>.
                       </li>
                     </ol>
                   </div>
