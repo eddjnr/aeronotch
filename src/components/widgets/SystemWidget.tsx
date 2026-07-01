@@ -103,8 +103,8 @@ export function SystemWidget({ stats, mode }: SystemWidgetProps) {
             </div>
 
             <div className="flex justify-between items-center w-full min-w-0 text-[8.5px] text-white/40 font-medium">
-              <span>Global CPU Core Load</span>
-              <span className="truncate max-w-[150px]">Multi-threaded Monitoring</span>
+              <span className="truncate max-w-[180px] font-semibold text-white/60">{stats.cpu_name}</span>
+              <span>Real-time Monitoring</span>
             </div>
           </div>
         )}

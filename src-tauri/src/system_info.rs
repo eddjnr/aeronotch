@@ -5,6 +5,7 @@ use sysinfo::System;
 /// Real-time system statistics emitted to the frontend.
 #[derive(Debug, Serialize, Clone)]
 pub struct SystemStats {
+    pub cpu_name: String,
     pub cpu_usage: f32,
     pub total_memory: u64,
     pub used_memory: u64,
@@ -40,6 +41,7 @@ fn run_command(cmd: &str, args: &[&str]) -> Option<String> {
 /// Thread-safe wrapper around `sysinfo::System`.
 pub struct SystemMonitor {
     system: Mutex<System>,
+    cpu_name: String,
     gpu_name: String,
 }
 
@@ -47,6 +49,11 @@ impl SystemMonitor {
     pub fn new() -> Self {
         let mut sys = System::new_all();
         sys.refresh_all();
+
+        // Get CPU name once at startup
+        let cpu_name = sys.cpus().first()
+            .map(|c| c.brand().trim().to_string())
+            .unwrap_or_else(|| "Processor".to_string());
 
         // Get GPU name once at startup
         let gpu_name = run_command("powershell", &[
@@ -56,6 +63,7 @@ impl SystemMonitor {
 
         Self {
             system: Mutex::new(sys),
+            cpu_name,
             gpu_name,
         }
     }
@@ -106,6 +114,7 @@ impl SystemMonitor {
         }
 
         SystemStats {
+            cpu_name: self.cpu_name.clone(),
             cpu_usage: sys.global_cpu_usage(),
             total_memory,
             used_memory,
@@ -119,4 +128,3 @@ impl SystemMonitor {
         }
     }
 }
-

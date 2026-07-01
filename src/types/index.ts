@@ -10,6 +10,7 @@ export interface MediaInfo {
 }
 
 export interface SystemStats {
+  cpu_name: string;
   cpu_usage: number;
   total_memory: number;
   used_memory: number;
