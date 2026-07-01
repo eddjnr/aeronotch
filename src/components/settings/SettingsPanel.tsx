@@ -13,11 +13,18 @@ import {
   LayoutGrid,
   HeartHandshake,
   RotateCcw,
+  Link2,
 } from "lucide-react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { emit } from "@tauri-apps/api/event";
 import { SpinningText } from "@/components/ui/spinnig-text";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  connectGoogleCalendar,
+  disconnectGoogleCalendar,
+  getGoogleCalendarStatus,
+  GoogleCalendarStatus,
+} from "../../lib/tauri-commands";
 
 // Custom macOS/iOS Style Toggle Switch
 function IOSSwitch({
@@ -46,10 +53,16 @@ function IOSSwitch({
 
 export function SettingsPanel() {
   const settings = useSettingsStore();
-  const [activeTab, setActiveTab] = useState<"general" | "widgets" | "about">(
+  const [activeTab, setActiveTab] = useState<"general" | "widgets" | "integrations" | "about">(
     "general",
   );
   const [autostart, setAutostart] = useState(false);
+  const [googleStatus, setGoogleStatus] = useState<GoogleCalendarStatus | null>(null);
+  const [customClientId, setCustomClientId] = useState("");
+  const [customClientSecret, setCustomClientSecret] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Load Autostart status on mount
   useEffect(() => {
@@ -61,7 +74,37 @@ export function SettingsPanel() {
       }
     }
     checkAutostart();
+
+    // Fetch google calendar status on mount
+    getGoogleCalendarStatus()
+      .then(setGoogleStatus)
+      .catch(console.error);
   }, []);
+
+  const handleConnectGoogle = async () => {
+    setIsConnecting(true);
+    setConnectionError(null);
+    try {
+      const email = await connectGoogleCalendar(
+        customClientId.trim() || undefined,
+        customClientSecret.trim() || undefined
+      );
+      setGoogleStatus({ connected: true, email });
+    } catch (e) {
+      setConnectionError(String(e));
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    try {
+      await disconnectGoogleCalendar();
+      setGoogleStatus({ connected: false });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleToggleAutostart = async () => {
     try {
@@ -181,10 +224,26 @@ export function SettingsPanel() {
             </button>
 
             <button
+              onClick={() => setActiveTab("integrations")}
+              className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all outline-none text-left ${
+                activeTab === "integrations"
+                  ? "bg-[#051265] text-white"
+                  : "text-[#1d1d1f] hover:bg-black/5"
+              }`}
+            >
+              <Link2
+                className={`w-4 h-4 ${
+                  activeTab === "integrations" ? "text-white" : "text-[#555557]"
+                }`}
+              />
+              <span>Integrations</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab("about")}
               className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all outline-none text-left ${
                 activeTab === "about"
-                  ? "bg-[#007aff] text-white"
+                  ? "bg-[#051265] text-white"
                   : "text-[#1d1d1f] hover:bg-black/5"
               }`}
             >
@@ -522,6 +581,115 @@ export function SettingsPanel() {
                     <span className="text-[8px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
                       Planned
                     </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "integrations" && (
+            <motion.div
+              key="integrations"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              className="flex flex-col gap-6 max-w-lg"
+            >
+              {/* Header */}
+              <div>
+                <h1 className="text-[22px] font-bold text-[#1d1d1f] tracking-tight">
+                  Integrations
+                </h1>
+                <p className="text-[10px] text-[#86868b] mt-0.5">
+                  Link with cloud calendars and email services to display schedules.
+                </p>
+              </div>
+
+              {/* Service Cards */}
+              <div className="flex flex-col gap-4">
+                <div className="bg-white rounded-xl shadow-sm border border-black/5 overflow-hidden p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#4285f4] text-white flex-shrink-0">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-[#1d1d1f]">Google Calendar</span>
+                        <span className="text-[9px] text-[#86868b] mt-0.5">
+                          {googleStatus?.connected
+                            ? `Synced to ${googleStatus.email}`
+                            : "Show scheduled events directly on the island."}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      {googleStatus?.connected ? (
+                        <button
+                          onClick={handleDisconnectGoogle}
+                          className="bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 text-[#ff3b30] text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                        >
+                          Disconnect
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleConnectGoogle}
+                          disabled={isConnecting}
+                          className="bg-[#051265] hover:bg-[#051265]/90 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors disabled:opacity-50"
+                        >
+                          {isConnecting ? "Connecting..." : "Connect..."}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {connectionError && (
+                    <div className="mt-3 p-2 bg-[#ff3b30]/5 text-[#ff3b30] text-[9px] rounded-lg border border-[#ff3b30]/10">
+                      {connectionError}
+                    </div>
+                  )}
+
+                  {/* Advanced Developer Settings (Collapsible) */}
+                  <div className="mt-4 pt-3 border-t border-black/5">
+                    <button
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className="text-[9px] text-[#86868b] hover:text-[#1d1d1f] font-semibold cursor-pointer transition-colors flex items-center gap-1 focus:outline-none"
+                    >
+                      {showAdvanced ? "Hide Advanced Credentials" : "Show Advanced Credentials (OAuth)"}
+                    </button>
+
+                    {showAdvanced && (
+                      <div className="mt-3 flex flex-col gap-2.5 bg-[#f5f5f7] p-3 rounded-lg border border-black/5">
+                        <p className="text-[8px] text-[#86868b] leading-relaxed">
+                          By default, AeroNotch uses built-in credentials. If you want to use your own Google OAuth app, paste your Desktop Client details here:
+                        </p>
+                        <div>
+                          <label className="text-[8px] text-[#555557] font-semibold block mb-1">
+                            Client ID
+                          </label>
+                          <input
+                            type="text"
+                            value={customClientId}
+                            onChange={(e) => setCustomClientId(e.target.value)}
+                            placeholder="Enter Google Client ID"
+                            className="w-full bg-white border border-black/10 rounded-md px-2 py-1 text-[9px] text-[#1d1d1f] outline-none focus:border-[#051265] transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[8px] text-[#555557] font-semibold block mb-1">
+                            Client Secret
+                          </label>
+                          <input
+                            type="password"
+                            value={customClientSecret}
+                            onChange={(e) => setCustomClientSecret(e.target.value)}
+                            placeholder="Enter Google Client Secret"
+                            className="w-full bg-white border border-black/10 rounded-md px-2 py-1 text-[9px] text-[#1d1d1f] outline-none focus:border-[#051265] transition-colors"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

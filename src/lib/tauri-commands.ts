@@ -46,3 +46,23 @@ export async function openSettingsWindow(): Promise<void> {
   return invoke('open_settings_window');
 }
 
+export interface GoogleCalendarStatus {
+  connected: boolean;
+  email?: string;
+}
+
+export async function connectGoogleCalendar(
+  clientId?: string,
+  clientSecret?: string,
+): Promise<string> {
+  return invoke<string>('connect_google_calendar', { clientId, clientSecret });
+}
+
+export async function disconnectGoogleCalendar(): Promise<void> {
+  return invoke('disconnect_google_calendar');
+}
+
+export async function getGoogleCalendarStatus(): Promise<GoogleCalendarStatus> {
+  return invoke<GoogleCalendarStatus>('get_google_calendar_status');
+}
+

@@ -1,6 +1,7 @@
 mod media;
 mod system_info;
 mod weather;
+mod google_calendar;
 
 use media::{MediaAction, MediaInfo};
 use system_info::{SystemMonitor, SystemStats};
@@ -145,6 +146,34 @@ async fn open_settings_window(app_handle: tauri::AppHandle) -> Result<(), String
     Ok(())
 }
 
+#[tauri::command]
+async fn connect_google_calendar(
+    app_handle: tauri::AppHandle,
+    client_id: Option<String>,
+    client_secret: Option<String>,
+) -> Result<String, String> {
+    google_calendar::connect_flow(app_handle, client_id, client_secret).await
+}
+
+#[tauri::command]
+async fn disconnect_google_calendar(app_handle: tauri::AppHandle) -> Result<(), String> {
+    google_calendar::delete_credentials(&app_handle)
+}
+
+#[tauri::command]
+async fn get_google_calendar_status(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    if let Some(creds) = google_calendar::load_credentials(&app_handle) {
+        Ok(serde_json::json!({
+            "connected": true,
+            "email": creds.email,
+        }))
+    } else {
+        Ok(serde_json::json!({
+            "connected": false,
+        }))
+    }
+}
+
 // ── App Setup ───────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -171,6 +200,9 @@ pub fn run() {
             set_island_size,
             set_click_through,
             open_settings_window,
+            connect_google_calendar,
+            disconnect_google_calendar,
+            get_google_calendar_status,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main").unwrap();
@@ -251,6 +283,9 @@ pub fn run() {
                     tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
                 }
             });
+
+            // ── Background: emit Google Calendar events every 5 minutes ──
+            google_calendar::start_polling(app.handle().clone());
 
             Ok(())
         })
