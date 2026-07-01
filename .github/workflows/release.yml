@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
 
 jobs:
   publish-tauri:
@@ -58,9 +58,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'AeroNotch ${{ github.ref_name }}'
-          releaseDraft: true
+          tagName: 'v__VERSION__' # Auto-extracts version from package.json or tauri.conf.json
+          releaseName: 'AeroNotch v__VERSION__'
+          releaseDraft: false # Instantly publishes the release
           prerelease: false
           releaseGenerateReleaseNotes: true
           args: ${{ matrix.args }}
