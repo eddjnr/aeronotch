@@ -9,18 +9,7 @@ jobs:
   publish-tauri:
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'windows-latest'
-            args: ''
-          - platform: 'macos-latest'
-            args: ''
-          - platform: 'ubuntu-22.04'
-            args: ''
-
-    runs-on: ${{ matrix.platform }}
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,12 +33,6 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Install Linux dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
-
       - name: Install frontend dependencies
         run: pnpm install
 
@@ -63,4 +46,3 @@ jobs:
           releaseDraft: false # Instantly publishes the release
           prerelease: false
           releaseGenerateReleaseNotes: true
-          args: ${{ matrix.args }}
