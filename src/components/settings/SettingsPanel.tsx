@@ -53,16 +53,16 @@ function IOSSwitch({
 
 export function SettingsPanel() {
   const settings = useSettingsStore();
-  const [activeTab, setActiveTab] = useState<"general" | "widgets" | "integrations" | "about">(
-    "general",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "general" | "widgets" | "integrations" | "about"
+  >("general");
   const [autostart, setAutostart] = useState(false);
-  const [googleStatus, setGoogleStatus] = useState<GoogleCalendarStatus | null>(null);
-  const [customClientId, setCustomClientId] = useState("");
-  const [customClientSecret, setCustomClientSecret] = useState("");
+  const [googleStatus, setGoogleStatus] = useState<GoogleCalendarStatus | null>(
+    null,
+  );
+  const [calendarUrl, setCalendarUrl] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Load Autostart status on mount
   useEffect(() => {
@@ -77,19 +77,25 @@ export function SettingsPanel() {
 
     // Fetch google calendar status on mount
     getGoogleCalendarStatus()
-      .then(setGoogleStatus)
+      .then((status) => {
+        setGoogleStatus(status);
+        if (status.connected && status.url) {
+          setCalendarUrl(status.url);
+        }
+      })
       .catch(console.error);
   }, []);
 
   const handleConnectGoogle = async () => {
+    if (!calendarUrl.trim()) {
+      setConnectionError("Please enter a valid iCal/ICS URL.");
+      return;
+    }
     setIsConnecting(true);
     setConnectionError(null);
     try {
-      const email = await connectGoogleCalendar(
-        customClientId.trim() || undefined,
-        customClientSecret.trim() || undefined
-      );
-      setGoogleStatus({ connected: true, email });
+      await connectGoogleCalendar(calendarUrl.trim());
+      setGoogleStatus({ connected: true, url: calendarUrl.trim() });
     } catch (e) {
       setConnectionError(String(e));
     } finally {
@@ -101,6 +107,7 @@ export function SettingsPanel() {
     try {
       await disconnectGoogleCalendar();
       setGoogleStatus({ connected: false });
+      setCalendarUrl("");
     } catch (e) {
       console.error(e);
     }
@@ -227,7 +234,7 @@ export function SettingsPanel() {
               onClick={() => setActiveTab("integrations")}
               className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all outline-none text-left ${
                 activeTab === "integrations"
-                  ? "bg-[#051265] text-white"
+                  ? "bg-[#007aff] text-white"
                   : "text-[#1d1d1f] hover:bg-black/5"
               }`}
             >
@@ -243,7 +250,7 @@ export function SettingsPanel() {
               onClick={() => setActiveTab("about")}
               className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all outline-none text-left ${
                 activeTab === "about"
-                  ? "bg-[#051265] text-white"
+                  ? "bg-[#007aff] text-white"
                   : "text-[#1d1d1f] hover:bg-black/5"
               }`}
             >
@@ -602,94 +609,103 @@ export function SettingsPanel() {
                   Integrations
                 </h1>
                 <p className="text-[10px] text-[#86868b] mt-0.5">
-                  Link with cloud calendars and email services to display schedules.
+                  Link with cloud calendars using direct iCal/ICS feed URLs.
                 </p>
               </div>
 
               {/* Service Cards */}
               <div className="flex flex-col gap-4">
-                <div className="bg-white rounded-xl shadow-sm border border-black/5 overflow-hidden p-4">
+                <div className="bg-white rounded-xl shadow-sm border border-black/5 overflow-hidden p-5 flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3.5">
-                      <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#4285f4] text-white flex-shrink-0">
+                      <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#007aff] text-white flex-shrink-0">
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-bold text-[#1d1d1f]">Google Calendar</span>
+                        <span className="text-xs font-bold text-[#1d1d1f]">
+                          Calendar Subscription
+                        </span>
                         <span className="text-[9px] text-[#86868b] mt-0.5">
                           {googleStatus?.connected
-                            ? `Synced to ${googleStatus.email}`
-                            : "Show scheduled events directly on the island."}
+                            ? "Connected and syncing in real-time"
+                            : "Display schedules from Google, Outlook, or Apple Calendar."}
                         </span>
                       </div>
                     </div>
 
                     <div>
-                      {googleStatus?.connected ? (
+                      {googleStatus?.connected && (
                         <button
                           onClick={handleDisconnectGoogle}
                           className="bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 text-[#ff3b30] text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
                         >
                           Disconnect
                         </button>
-                      ) : (
-                        <button
-                          onClick={handleConnectGoogle}
-                          disabled={isConnecting}
-                          className="bg-[#051265] hover:bg-[#051265]/90 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors disabled:opacity-50"
-                        >
-                          {isConnecting ? "Connecting..." : "Connect..."}
-                        </button>
                       )}
                     </div>
                   </div>
 
+                  {!googleStatus?.connected ? (
+                    <div className="flex flex-col gap-2.5">
+                      <label className="text-[9px] text-[#555557] font-semibold">
+                        Secret Address in iCal format (.ics Link)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={calendarUrl}
+                          onChange={(e) => setCalendarUrl(e.target.value)}
+                          placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
+                          className="flex-1 bg-[#f5f5f7] border border-black/10 rounded-lg px-3 py-1.5 text-[10px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#051265] transition-all"
+                        />
+                        <button
+                          onClick={handleConnectGoogle}
+                          disabled={isConnecting}
+                          className="bg-[#051265] hover:bg-[#051265]/90 text-white text-[10px] font-bold px-4 py-1.5 rounded-lg cursor-pointer transition-colors disabled:opacity-50 flex-shrink-0"
+                        >
+                          {isConnecting ? "Syncing..." : "Sync Calendar"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#f5f5f7] p-3 rounded-lg border border-black/5 divide-y divide-black/5">
+                      <div className="pb-2">
+                        <span className="text-[8px] text-[#86868b] font-semibold block uppercase">
+                          Synced Link
+                        </span>
+                        <span className="text-[9px] text-[#1d1d1f] truncate block mt-0.5 font-mono max-w-[400px]">
+                          {googleStatus.url}
+                        </span>
+                      </div>
+                      <div className="pt-2 flex items-center gap-1.5 text-[8px] text-[#34c759] font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#34c759] animate-pulse" />
+                        Active Sync (updates every 15 minutes)
+                      </div>
+                    </div>
+                  )}
+
                   {connectionError && (
-                    <div className="mt-3 p-2 bg-[#ff3b30]/5 text-[#ff3b30] text-[9px] rounded-lg border border-[#ff3b30]/10">
+                    <div className="mt-1 p-2 bg-[#ff3b30]/5 text-[#ff3b30] text-[9px] rounded-lg border border-[#ff3b30]/10">
                       {connectionError}
                     </div>
                   )}
 
-                  {/* Advanced Developer Settings (Collapsible) */}
-                  <div className="mt-4 pt-3 border-t border-black/5">
-                    <button
-                      onClick={() => setShowAdvanced(!showAdvanced)}
-                      className="text-[9px] text-[#86868b] hover:text-[#1d1d1f] font-semibold cursor-pointer transition-colors flex items-center gap-1 focus:outline-none"
-                    >
-                      {showAdvanced ? "Hide Advanced Credentials" : "Show Advanced Credentials (OAuth)"}
-                    </button>
-
-                    {showAdvanced && (
-                      <div className="mt-3 flex flex-col gap-2.5 bg-[#f5f5f7] p-3 rounded-lg border border-black/5">
-                        <p className="text-[8px] text-[#86868b] leading-relaxed">
-                          By default, AeroNotch uses built-in credentials. If you want to use your own Google OAuth app, paste your Desktop Client details here:
-                        </p>
-                        <div>
-                          <label className="text-[8px] text-[#555557] font-semibold block mb-1">
-                            Client ID
-                          </label>
-                          <input
-                            type="text"
-                            value={customClientId}
-                            onChange={(e) => setCustomClientId(e.target.value)}
-                            placeholder="Enter Google Client ID"
-                            className="w-full bg-white border border-black/10 rounded-md px-2 py-1 text-[9px] text-[#1d1d1f] outline-none focus:border-[#051265] transition-colors"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[8px] text-[#555557] font-semibold block mb-1">
-                            Client Secret
-                          </label>
-                          <input
-                            type="password"
-                            value={customClientSecret}
-                            onChange={(e) => setCustomClientSecret(e.target.value)}
-                            placeholder="Enter Google Client Secret"
-                            className="w-full bg-white border border-black/10 rounded-md px-2 py-1 text-[9px] text-[#1d1d1f] outline-none focus:border-[#051265] transition-colors"
-                          />
-                        </div>
-                      </div>
-                    )}
+                  {/* Guideline instructions */}
+                  <div className="border-t border-black/5 pt-3.5">
+                    <span className="text-[9px] font-bold text-[#1d1d1f] block mb-1.5">
+                      How to find your iCal link:
+                    </span>
+                    <ol className="text-[8px] text-[#86868b] leading-relaxed list-decimal list-inside flex flex-col gap-1">
+                      <li>
+                        Open <strong>Google Calendar</strong> in your web browser.
+                      </li>
+                      <li>
+                        Hover over your calendar name on the left list, click the <strong>3 dots</strong> and choose <strong>Settings and sharing</strong>.
+                      </li>
+                      <li>
+                        Scroll down to <strong>Integrate calendar</strong> and copy the <strong>Secret address in iCal format</strong>.
+                      </li>
+                    </ol>
                   </div>
                 </div>
               </div>

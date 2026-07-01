@@ -147,25 +147,24 @@ async fn open_settings_window(app_handle: tauri::AppHandle) -> Result<(), String
 }
 
 #[tauri::command]
-async fn connect_google_calendar(
-    app_handle: tauri::AppHandle,
-    client_id: Option<String>,
-    client_secret: Option<String>,
-) -> Result<String, String> {
-    google_calendar::connect_flow(app_handle, client_id, client_secret).await
+async fn connect_google_calendar(app_handle: tauri::AppHandle, url: String) -> Result<(), String> {
+    // Validate the URL immediately before saving
+    let _events = google_calendar::fetch_events(&url).await?;
+    google_calendar::save_config(&app_handle, &google_calendar::CalendarConfig { url })?;
+    Ok(())
 }
 
 #[tauri::command]
 async fn disconnect_google_calendar(app_handle: tauri::AppHandle) -> Result<(), String> {
-    google_calendar::delete_credentials(&app_handle)
+    google_calendar::delete_config(&app_handle)
 }
 
 #[tauri::command]
 async fn get_google_calendar_status(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
-    if let Some(creds) = google_calendar::load_credentials(&app_handle) {
+    if let Some(config) = google_calendar::load_config(&app_handle) {
         Ok(serde_json::json!({
             "connected": true,
-            "email": creds.email,
+            "url": config.url,
         }))
     } else {
         Ok(serde_json::json!({

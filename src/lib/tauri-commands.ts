@@ -48,14 +48,13 @@ export async function openSettingsWindow(): Promise<void> {
 
 export interface GoogleCalendarStatus {
   connected: boolean;
-  email?: string;
+  url?: string;
 }
 
 export async function connectGoogleCalendar(
-  clientId?: string,
-  clientSecret?: string,
-): Promise<string> {
-  return invoke<string>('connect_google_calendar', { clientId, clientSecret });
+  url: string,
+): Promise<void> {
+  return invoke('connect_google_calendar', { url });
 }
 
 export async function disconnectGoogleCalendar(): Promise<void> {
