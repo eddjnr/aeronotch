@@ -341,13 +341,26 @@ fn expand_raw_events(
         }
     }
 
-    expanded.sort_by(|a, b| {
+    // Deduplicate by summary and start time
+    let mut unique = Vec::new();
+    for event in expanded {
+        let start_val = event.start.date_time.as_ref().or(event.start.date.as_ref()).cloned();
+        let is_dup = unique.iter().any(|u: &CalendarEvent| {
+            let u_start = u.start.date_time.as_ref().or(u.start.date.as_ref()).cloned();
+            u.summary == event.summary && u_start == start_val
+        });
+        if !is_dup {
+            unique.push(event);
+        }
+    }
+
+    unique.sort_by(|a, b| {
         let a_start = a.start.date_time.as_ref().or(a.start.date.as_ref()).unwrap();
         let b_start = b.start.date_time.as_ref().or(b.start.date.as_ref()).unwrap();
         a_start.cmp(b_start)
     });
 
-    expanded
+    unique
 }
 
 pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {

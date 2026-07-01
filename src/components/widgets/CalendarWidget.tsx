@@ -136,7 +136,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
 
       {/* Events section */}
       <div
-        className="flex flex-col gap-2 mt-1 border-t border-white/5 pt-2 max-h-[82px] overflow-y-auto pr-1"
+        className="flex flex-col gap-2 mt-1 border-t border-white/5 pt-2 h-[72px] overflow-y-auto pr-1"
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(255, 255, 255, 0.12) transparent',
@@ -144,14 +144,14 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
       >
         {events.length > 0 ? (
           events.map((event) => (
-            <div key={event.id} className="flex items-center justify-between text-[11px] text-white/90">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="w-0.5 h-3.5 rounded-full bg-[#007aff] flex-shrink-0" />
-                <span className="truncate font-semibold max-w-[170px] text-white/95">
+            <div key={event.id} className="flex items-center justify-between gap-3 text-[11px] text-white/90">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="w-0.5 h-3 rounded-full bg-[#007aff] flex-shrink-0" />
+                <span className="truncate font-semibold text-white/95">
                   {event.summary || 'No Title'}
                 </span>
               </div>
-              <span className="text-[10px] text-white/50 font-mono flex-shrink-0 font-medium">
+              <span className="text-[10.5px] text-white/60 font-sans font-medium flex-shrink-0 tabular-nums">
                 {formatEventTime(event)}
               </span>
             </div>
