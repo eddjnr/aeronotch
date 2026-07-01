@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="AeroNotch Logo" width="120" height="120" style="border-radius: 24px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);" />
+  <img src="./public/logo.png" alt="AeroNotch Logo" width="120" height="120" style="border-radius: 24px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);" />
 </p>
 
 <h1 align="center">AeroNotch</h1>
@@ -25,6 +25,7 @@ AeroNotch brings the premium, organic feel of the iOS Dynamic Island straight to
 ## 🎨 Preview & Aesthetics
 
 AeroNotch is built around Apple-like design principles:
+
 - **Elastic Transitions**: Smooth, spring-based animations that bounce organically (the "jelly" effect).
 - **Bezel-Integrated Unity**: Curves and position anchors that visually merge with the top edge of your physical screen bezel.
 - **Glassmorphism**: Elegant dark translucent backgrounds with native window drop-shadows and subtle borders.
@@ -34,36 +35,41 @@ AeroNotch is built around Apple-like design principles:
 ## ✨ Features
 
 ### 🎵 Music Widget (SMTC Integrated)
-* **Real-time SMTC Sync**: Instantly displays track details, artist names, and album art from active Windows players (Spotify, YouTube, Chrome, etc.).
-* **Interactive Drag-Seeking**: Drag and scrub the timeline slider to jump to any part of a song in real-time.
-* **Responsive Equalizer**: A smooth, real-time vertical frequency wave that animates only when music is playing (using high-performance direct DOM painting).
-* **Press States**: Elastically scaling play/pause/skip buttons with smooth morphing transitions.
+
+- **Real-time SMTC Sync**: Instantly displays track details, artist names, and album art from active Windows players (Spotify, YouTube, Chrome, etc.).
+- **Interactive Drag-Seeking**: Drag and scrub the timeline slider to jump to any part of a song in real-time.
+- **Responsive Equalizer**: A smooth, real-time vertical frequency wave that animates only when music is playing (using high-performance direct DOM painting).
+- **Press States**: Elastically scaling play/pause/skip buttons with smooth morphing transitions.
 
 ### 📊 System Widget (Hardware Monitor)
-* **Live Statistics**: Displays real-time CPU utilization, RAM usage, and battery percentages.
-* **Low-Overhead Polling**: Backend Rust thread queries system APIs efficiently every 3 seconds to keep resource usage practically non-existent.
+
+- **Live Statistics**: Displays real-time CPU utilization, RAM usage, and battery percentages.
+- **Low-Overhead Polling**: Backend Rust thread queries system APIs efficiently every 3 seconds to keep resource usage practically non-existent.
 
 ### ⛅ Weather Widget
-* **Current Conditions**: Automatically fetches localized temperature, weather descriptions, and matches appropriate atmospheric icons.
-* **Configurable Location**: Set custom coordinates (latitude & longitude) directly within the Preferences panel.
+
+- **Current Conditions**: Automatically fetches localized temperature, weather descriptions, and matches appropriate atmospheric icons.
+- **Configurable Location**: Set custom coordinates (latitude & longitude) directly within the Preferences panel.
 
 ### 📅 Calendar & Clock Widgets
-* **Quick Look**: A compact calendar widget showing current weekday, day, and month alongside a digital clock.
+
+- **Quick Look**: A compact calendar widget showing current weekday, day, and month alongside a digital clock.
 
 ### ⚙️ macOS-Style Preferences Panel
-* **Sidebar Navigation**: Clean, native sidebar navigation with card-based options grouped in iOS-style rounded layouts.
-* **Instant Settings Sync**: Tweak coordinates, hide/show widgets, adjust opacity, and toggle app behavior. Changes sync in real-time across Tauri windows without requiring restarts.
-* **System Tray integration**: Right-click the custom AeroNotch tray icon in your Windows taskbar to access settings, show/hide the island, or exit.
+
+- **Sidebar Navigation**: Clean, native sidebar navigation with card-based options grouped in iOS-style rounded layouts.
+- **Instant Settings Sync**: Tweak coordinates, hide/show widgets, adjust opacity, and toggle app behavior. Changes sync in real-time across Tauri windows without requiring restarts.
+- **System Tray integration**: Right-click the custom AeroNotch tray icon in your Windows taskbar to access settings, show/hide the island, or exit.
 
 ---
 
 ## ⚡ Tech Stack
 
-* **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand
-* **Backend**: Rust, Tauri v2
-* **Natives / APIs**:
-  * `windows-rs` (system SMTC media tracking and volume commands)
-  * `sysinfo` (Rust-based ultra-fast system hardware metrics)
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand
+- **Backend**: Rust, Tauri v2
+- **Natives / APIs**:
+  - `windows-rs` (system SMTC media tracking and volume commands)
+  - `sysinfo` (Rust-based ultra-fast system hardware metrics)
 
 ---
 
@@ -93,6 +99,7 @@ Follow these instructions to set up the project locally on your machine for deve
 ### Development
 
 Launch the developer environment. This boots Vite for the frontend and compiles/runs the Tauri Rust window system in debug mode:
+
 ```bash
 pnpm tauri dev
 ```
@@ -100,9 +107,11 @@ pnpm tauri dev
 ### Production Compilation
 
 Build a highly optimized production bundle (`.exe` installer and portable binary):
+
 ```bash
 pnpm tauri build
 ```
+
 The compiled assets will be placed inside `src-tauri/target/release/bundle/`.
 
 ---
@@ -110,6 +119,7 @@ The compiled assets will be placed inside `src-tauri/target/release/bundle/`.
 ## 🧠 Design Philosophy
 
 All code changes to AeroNotch strictly respect three core rules defined in our design specification (`PRODUCT.md`):
+
 1. **Bezel-Integrated Unity**: The island must anchor to the top edge and use matching concave curves (`border-radius: 16px` for lower corners) so it feels like a physical part of the screen.
 2. **Unobtrusive Interactivity**: Layout state changes must feel light. Hovering expands the island into compact widgets; clicking or play status toggles into detailed cards.
 3. **Zero Layout Thrashing**: Resizing the native Windows window must wait for the React transition collapse animations to complete, preventing sharp black frame glitches.
