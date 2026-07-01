@@ -509,7 +509,21 @@ fn expand_raw_events(
     unique
 }
 
-pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
+fn extract_email_from_url(url: &str) -> Option<String> {
+    let prefix = "/ical/";
+    if let Some(start_idx) = url.find(prefix) {
+        let email_start = start_idx + prefix.len();
+        if let Some(end_idx) = url[email_start..].find('/') {
+            let encoded_email = &url[email_start..email_start + end_idx];
+            if let Ok(decoded) = urlencoding::decode(encoded_email) {
+                return Some(decoded.into_owned());
+            }
+        }
+    }
+    None
+}
+
+pub fn parse_ics(text: &str, owner_email: Option<&str>) -> Vec<CalendarEvent> {
     let lines = unfold_ics(text);
     let mut raw_events = Vec::new();
 
@@ -520,6 +534,7 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
     let mut current_rrule: Option<String> = None;
     let mut current_exdates: Vec<String> = Vec::new();
     let mut current_status: Option<String> = None;
+    let mut is_declined = false;
     let mut in_event = false;
 
     for line in lines {
@@ -533,13 +548,14 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
             current_rrule = None;
             current_exdates.clear();
             current_status = None;
+            is_declined = false;
         } else if line.starts_with("END:VEVENT") {
             if in_event {
                 let id = current_id.clone().unwrap_or_else(|| format!("event-{}", raw_events.len()));
                 let summary = current_summary.clone().unwrap_or_else(|| "No Title".to_string());
                 let status = current_status.clone().unwrap_or_else(|| "CONFIRMED".to_string());
 
-                if status.trim().to_uppercase() != "CANCELLED" {
+                if status.trim().to_uppercase() != "CANCELLED" && !is_declined {
                     if let Some(start_raw) = current_start.clone() {
                         if let Some(end_raw) = current_end.clone() {
                             raw_events.push(RawEvent {
@@ -588,6 +604,15 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
                             }
                         }
                     }
+                    "ATTENDEE" => {
+                        if let Some(owner) = owner_email {
+                            let line_upper = line.to_uppercase();
+                            let owner_upper = owner.to_uppercase();
+                            if line_upper.contains("PARTSTAT=DECLINED") && line_upper.contains(&owner_upper) {
+                                is_declined = true;
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -614,7 +639,8 @@ pub async fn fetch_events(url: &str) -> Result<Vec<CalendarEvent>, String> {
     }
 
     let body = res.text().await.map_err(|e| format!("Failed to read body: {}", e))?;
-    let events = parse_ics(&body);
+    let owner_email = extract_email_from_url(url);
+    let events = parse_ics(&body, owner_email.as_deref());
     Ok(events)
 }
 
@@ -727,8 +753,33 @@ mod tests {
                         END:VEVENT\n\
                         END:VCALENDAR";
 
-        let events = parse_ics(ics_data);
+        let events = parse_ics(ics_data, None);
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].summary, "Active Event");
+    }
+
+    #[test]
+    fn test_declined_attendee_filtering() {
+        let ics_data = "BEGIN:VCALENDAR\n\
+                        VERSION:2.0\n\
+                        BEGIN:VEVENT\n\
+                        UID:event-accepted@google.com\n\
+                        SUMMARY:Accepted Event\n\
+                        DTSTART:20260701T100000Z\n\
+                        DTEND:20260701T110000Z\n\
+                        ATTENDEE;PARTSTAT=ACCEPTED:mailto:user@example.com\n\
+                        END:VEVENT\n\
+                        BEGIN:VEVENT\n\
+                        UID:event-declined@google.com\n\
+                        SUMMARY:Declined Event\n\
+                        DTSTART:20260701T120000Z\n\
+                        DTEND:20260701T130000Z\n\
+                        ATTENDEE;PARTSTAT=DECLINED:mailto:user@example.com\n\
+                        END:VEVENT\n\
+                        END:VCALENDAR";
+
+        let events = parse_ics(ics_data, Some("user@example.com"));
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].summary, "Accepted Event");
     }
 }
