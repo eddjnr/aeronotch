@@ -217,7 +217,64 @@ fn expand_raw_events(
                 let mut current_end = base_end;
                 let mut occurrence_count = 0;
 
+                // Fast-forward current_start if no COUNT limit is set to avoid loop budget exhaustion
+                if rrule.count.is_none() {
+                    let diff_days = range_start.signed_duration_since(base_start).num_days();
+                    if diff_days > 7 {
+                        match rrule.freq.as_str() {
+                            "DAILY" => {
+                                let step = rrule.interval as i64;
+                                if step > 0 {
+                                    let steps = diff_days / step;
+                                    current_start = base_start + chrono::Duration::days(steps * step);
+                                    current_end = current_start + duration;
+                                }
+                            }
+                            "WEEKLY" => {
+                                let step = (rrule.interval * 7) as i64;
+                                if step > 0 {
+                                    let steps = diff_days / step;
+                                    current_start = base_start + chrono::Duration::days(steps * step);
+                                    current_end = current_start + duration;
+                                }
+                            }
+                            "MONTHLY" => {
+                                let diff_months = (range_start.year() - base_start.year()) * 12
+                                    + (range_start.month() as i32 - base_start.month() as i32);
+                                if diff_months > 1 {
+                                    let step = rrule.interval as i32;
+                                    if step > 0 {
+                                        let steps = diff_months / step;
+                                        if let Some(next) = base_start.checked_add_months(chrono::Months::new((steps * step) as u32)) {
+                                            current_start = next;
+                                            current_end = current_start + duration;
+                                        }
+                                    }
+                                }
+                            }
+                            "YEARLY" => {
+                                let diff_years = range_start.year() - base_start.year();
+                                if diff_years > 1 {
+                                    let step = rrule.interval as i32;
+                                    if step > 0 {
+                                        let steps = diff_years / step;
+                                        if let Some(next) = base_start.checked_add_months(chrono::Months::new((steps * step * 12) as u32)) {
+                                            current_start = next;
+                                            current_end = current_start + duration;
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+
                 for _ in 0..1000 {
+                    if current_start > range_end {
+                        break;
+                    }
+
                     if let Some(until_dt) = rrule.until {
                         if current_start > until_dt {
                             break;
@@ -230,57 +287,114 @@ fn expand_raw_events(
                         }
                     }
 
-                    let matches_byday = if rrule.byday.is_empty() {
-                        if rrule.freq == "WEEKLY" {
-                            current_start.weekday() == base_start.weekday()
-                        } else {
-                            true
+                    if rrule.freq == "WEEKLY" && !rrule.byday.is_empty() {
+                        // For WEEKLY with BYDAY, we look at all days in the current week
+                        let offset = current_start.weekday().num_days_from_monday();
+                        let monday = current_start - chrono::Duration::days(offset as i64);
+
+                        for d in 0..7 {
+                            let day = monday + chrono::Duration::days(d);
+                            if day < base_start {
+                                continue;
+                            }
+                            if let Some(until_dt) = rrule.until {
+                                if day > until_dt {
+                                    break;
+                                }
+                            }
+
+                            let weekday_str = match day.weekday() {
+                                chrono::Weekday::Mon => "MO",
+                                chrono::Weekday::Tue => "TU",
+                                chrono::Weekday::Wed => "WE",
+                                chrono::Weekday::Thu => "TH",
+                                chrono::Weekday::Fri => "FR",
+                                chrono::Weekday::Sat => "SA",
+                                chrono::Weekday::Sun => "SU",
+                            };
+
+                            if rrule.byday.contains(&weekday_str.to_string()) {
+                                occurrence_count += 1;
+                                if let Some(max_count) = rrule.count {
+                                    if occurrence_count > max_count {
+                                        break;
+                                    }
+                                }
+
+                                let occurrence_end = day + duration;
+                                if occurrence_end >= range_start && day <= range_end {
+                                    let start_val = if start_is_all_day {
+                                        day.format("%Y-%m-%d").to_string()
+                                    } else {
+                                        day.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                                    };
+                                    let end_val = if start_is_all_day {
+                                        occurrence_end.format("%Y-%m-%d").to_string()
+                                    } else {
+                                        occurrence_end.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                                    };
+
+                                    expanded.push(CalendarEvent {
+                                        id: format!("{}-occurrence-{}", raw.id, day.timestamp()),
+                                        summary: raw.summary.clone(),
+                                        start: CalendarEventTime {
+                                            date_time: if !start_is_all_day { Some(start_val.clone()) } else { None },
+                                            date: if start_is_all_day { Some(start_val) } else { None },
+                                        },
+                                        end: CalendarEventTime {
+                                            date_time: if !start_is_all_day { Some(end_val.clone()) } else { None },
+                                            date: if start_is_all_day { Some(end_val) } else { None },
+                                        },
+                                    });
+                                }
+                            }
                         }
                     } else {
-                        let weekday_str = match current_start.weekday() {
-                            chrono::Weekday::Mon => "MO",
-                            chrono::Weekday::Tue => "TU",
-                            chrono::Weekday::Wed => "WE",
-                            chrono::Weekday::Thu => "TH",
-                            chrono::Weekday::Fri => "FR",
-                            chrono::Weekday::Sat => "SA",
-                            chrono::Weekday::Sun => "SU",
+                        // For DAILY, MONTHLY, YEARLY, and WEEKLY (without BYDAY)
+                        let matches_byday = if rrule.byday.is_empty() {
+                            true
+                        } else {
+                            let weekday_str = match current_start.weekday() {
+                                chrono::Weekday::Mon => "MO",
+                                chrono::Weekday::Tue => "TU",
+                                chrono::Weekday::Wed => "WE",
+                                chrono::Weekday::Thu => "TH",
+                                chrono::Weekday::Fri => "FR",
+                                chrono::Weekday::Sat => "SA",
+                                chrono::Weekday::Sun => "SU",
+                            };
+                            rrule.byday.contains(&weekday_str.to_string())
                         };
-                        rrule.byday.contains(&weekday_str.to_string())
-                    };
 
-                    if matches_byday {
-                        occurrence_count += 1;
+                        if matches_byday {
+                            occurrence_count += 1;
 
-                        if current_end >= range_start && current_start <= range_end {
-                            let start_val = if start_is_all_day {
-                                current_start.format("%Y-%m-%d").to_string()
-                            } else {
-                                current_start.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-                            };
-                            let end_val = if start_is_all_day {
-                                current_end.format("%Y-%m-%d").to_string()
-                            } else {
-                                current_end.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-                            };
+                            if current_end >= range_start && current_start <= range_end {
+                                let start_val = if start_is_all_day {
+                                    current_start.format("%Y-%m-%d").to_string()
+                                } else {
+                                    current_start.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                                };
+                                let end_val = if start_is_all_day {
+                                    current_end.format("%Y-%m-%d").to_string()
+                                } else {
+                                    current_end.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                                };
 
-                            expanded.push(CalendarEvent {
-                                id: format!("{}-occurrence-{}", raw.id, occurrence_count),
-                                summary: raw.summary.clone(),
-                                start: CalendarEventTime {
-                                    date_time: if !start_is_all_day { Some(start_val.clone()) } else { None },
-                                    date: if start_is_all_day { Some(start_val) } else { None },
-                                },
-                                end: CalendarEventTime {
-                                    date_time: if !start_is_all_day { Some(end_val.clone()) } else { None },
-                                    date: if start_is_all_day { Some(end_val) } else { None },
-                                },
-                            });
+                                expanded.push(CalendarEvent {
+                                    id: format!("{}-occurrence-{}", raw.id, current_start.timestamp()),
+                                    summary: raw.summary.clone(),
+                                    start: CalendarEventTime {
+                                        date_time: if !start_is_all_day { Some(start_val.clone()) } else { None },
+                                        date: if start_is_all_day { Some(start_val) } else { None },
+                                    },
+                                    end: CalendarEventTime {
+                                        date_time: if !start_is_all_day { Some(end_val.clone()) } else { None },
+                                        date: if start_is_all_day { Some(end_val) } else { None },
+                                    },
+                                });
+                            }
                         }
-                    }
-
-                    if current_start > range_end {
-                        break;
                     }
 
                     match rrule.freq.as_str() {
@@ -289,7 +403,7 @@ fn expand_raw_events(
                             current_end = current_start + duration;
                         }
                         "WEEKLY" => {
-                            current_start = current_start + chrono::Duration::days(1);
+                            current_start = current_start + chrono::Duration::days((rrule.interval * 7) as i64);
                             current_end = current_start + duration;
                         }
                         "MONTHLY" => {
@@ -431,10 +545,10 @@ pub fn parse_ics(text: &str) -> Vec<CalendarEvent> {
         }
     }
 
-    // Set expansion window: from 1 day ago to +7 days into the future
+    // Set expansion window: from 7 days ago to +14 days into the future
     let now = chrono::Utc::now();
-    let range_start = now - chrono::Duration::days(1);
-    let range_end = now + chrono::Duration::days(7);
+    let range_start = now - chrono::Duration::days(7);
+    let range_end = now + chrono::Duration::days(14);
 
     expand_raw_events(raw_events, range_start, range_end)
 }
@@ -469,4 +583,45 @@ pub fn start_polling(app: tauri::AppHandle) {
             tokio::time::sleep(std::time::Duration::from_secs(900)).await;
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    #[test]
+    fn test_recurrence_weekly_byday() {
+        let raw = RawEvent {
+            id: "test-event".to_string(),
+            summary: "Weekly Routine".to_string(),
+            start_raw: "20260601T070000".to_string(), // Monday, June 1, 2026
+            end_raw: "20260601T080000".to_string(),
+            rrule: Some("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR".to_string()),
+        };
+
+        // We want to expand from June 28, 2026 to July 4, 2026
+        let range_start = chrono::Utc.with_ymd_and_hms(2026, 6, 28, 0, 0, 0).unwrap();
+        let range_end = chrono::Utc.with_ymd_and_hms(2026, 7, 4, 23, 59, 59).unwrap();
+
+        let events = expand_raw_events(vec![raw], range_start, range_end);
+
+        for event in &events {
+            println!("Event: {} at {:?}", event.summary, event.start.date_time);
+        }
+
+        // June 28 (Sun) -> No
+        // June 29 (Mon) -> Yes (7:00 AM)
+        // June 30 (Tue) -> Yes (7:00 AM)
+        // July 1 (Wed) -> Yes (7:00 AM)
+        // July 2 (Thu) -> Yes (7:00 AM)
+        // July 3 (Fri) -> Yes (7:00 AM)
+        // July 4 (Sat) -> No
+        assert_eq!(events.len(), 5);
+        assert!(events[0].start.date_time.as_ref().unwrap().contains("2026-06-29"));
+        assert!(events[1].start.date_time.as_ref().unwrap().contains("2026-06-30"));
+        assert!(events[2].start.date_time.as_ref().unwrap().contains("2026-07-01"));
+        assert!(events[3].start.date_time.as_ref().unwrap().contains("2026-07-02"));
+        assert!(events[4].start.date_time.as_ref().unwrap().contains("2026-07-03"));
+    }
 }
