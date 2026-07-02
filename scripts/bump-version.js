@@ -42,20 +42,20 @@ function replaceInFile(filePath, searchValue, replaceValue) {
   }
   content = content.replaceAll(searchValue, replaceValue);
   fs.writeFileSync(filePath, content, 'utf8');
-  console.log(`Updated ${filePath}`);
+  console.error(`Updated ${filePath}`);
 }
 
 // Update package.json
 pkg.version = newVersion;
 fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
-console.log(`Updated ${pkgPath}`);
+console.error(`Updated ${pkgPath}`);
 
 // Update tauri.conf.json
 if (fs.existsSync(tauriConfPath)) {
   const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, 'utf8'));
   tauriConf.version = newVersion;
   fs.writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2) + '\n', 'utf8');
-  console.log(`Updated ${tauriConfPath}`);
+  console.error(`Updated ${tauriConfPath}`);
 }
 
 // Update Cargo.toml
@@ -71,7 +71,7 @@ replaceInFile(translationsPath, `Versão ${oldVersion}`, `Versão ${newVersion}`
 // Regenerate Cargo.lock with the new version
 try {
   execSync('cargo generate-lockfile', { cwd: path.join(rootDir, 'src-tauri'), stdio: 'pipe' });
-  console.log('Regenerated Cargo.lock');
+  console.error('Regenerated Cargo.lock');
 } catch (err) {
   console.warn(`Failed to regenerate Cargo.lock: ${err.message}`);
 }
