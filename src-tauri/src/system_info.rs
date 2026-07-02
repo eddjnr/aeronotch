@@ -21,6 +21,8 @@ pub struct SystemStats {
     pub gpu_name: String,
     pub gpu_usage: f32,
     pub disks: Vec<DiskStats>,
+    pub cpu_temp: Option<f32>,
+    pub gpu_temp: Option<f32>,
 }
 
 /// Helper to execute process commands without displaying console window
@@ -137,7 +139,7 @@ impl SystemMonitor {
             "--query-gpu=utilization.gpu",
             "--format=csv,noheader,nounits"
         ])
-        .and_then(|s| s.parse::<f32>().ok())
+        .and_then(|s| s.replace(',', ".").parse::<f32>().ok())
         .unwrap_or(0.0);
 
         // Query disk space using sysinfo
@@ -198,6 +200,59 @@ impl SystemMonitor {
             sys.global_cpu_usage()
         };
 
+        // Query CPU and GPU temperatures using sysinfo::Components
+        use sysinfo::Components;
+        let components = Components::new_with_refreshed_list();
+        
+        let cpu_temp = components.iter()
+            .find(|c| {
+                let label = c.label().to_lowercase();
+                label.contains("cpu") || label.contains("core") || label.contains("package") || label.contains("soc")
+            })
+            .and_then(|c| c.temperature())
+            .or_else(|| {
+                components.iter().find_map(|c| c.temperature())
+            });
+
+        #[cfg(target_os = "windows")]
+        let cpu_temp = cpu_temp
+            .or_else(|| {
+                // Try LibreHardwareMonitor WMI
+                run_command("powershell", &[
+                    "-Command",
+                    "(Get-CimInstance -Namespace root/LibreHardwareMonitor -ClassName Sensor | Where-Object { $_.SensorType -eq 'Temperature' -and ($_.Name -like '*CPU Core*' -or $_.Name -like '*CPU Package*') } | Select-Object -ExpandProperty Value -First 1)"
+                ])
+                .and_then(|out| out.replace(',', ".").parse::<f32>().ok())
+            })
+            .or_else(|| {
+                // Try OpenHardwareMonitor WMI
+                run_command("powershell", &[
+                    "-Command",
+                    "(Get-CimInstance -Namespace root/OpenHardwareMonitor -ClassName Sensor | Where-Object { $_.SensorType -eq 'Temperature' -and ($_.Name -like '*CPU Core*' -or $_.Name -like '*CPU Package*') } | Select-Object -ExpandProperty Value -First 1)"
+                ])
+                .and_then(|out| out.replace(',', ".").parse::<f32>().ok())
+            })
+            .or_else(|| {
+                // Standard MS ACPI thermal zone
+                run_command("powershell", &[
+                    "-Command",
+                    "(Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature).CurrentTemperature"
+                ])
+                .and_then(|out| out.replace(',', ".").parse::<f32>().ok())
+                .map(|k_tenths| k_tenths / 10.0 - 273.15)
+            });
+
+        let gpu_temp = components.iter()
+            .find(|c| c.label().to_lowercase().contains("gpu"))
+            .and_then(|c| c.temperature())
+            .or_else(|| {
+                run_command("nvidia-smi", &[
+                    "--query-gpu=temperature.gpu",
+                    "--format=csv,noheader,nounits"
+                ])
+                .and_then(|out| out.replace(',', ".").parse::<f32>().ok())
+            });
+
         SystemStats {
             cpu_name: self.cpu_name.clone(),
             cpu_usage,
@@ -207,6 +262,9 @@ impl SystemMonitor {
             gpu_name: self.gpu_name.clone(),
             gpu_usage,
             disks: disk_stats,
+            cpu_temp,
+            gpu_temp,
         }
     }
 }
+
