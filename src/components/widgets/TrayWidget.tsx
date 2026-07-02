@@ -114,14 +114,14 @@ export function TrayWidget() {
       ) : (
         // File list state
         <div className="flex flex-col h-full justify-between">
-          <div className="flex items-center justify-between mb-1.5 px-1">
+          {/* <div className="flex items-center justify-between mb-1.5 px-1">
             <button
               onClick={clearTray}
               className="text-[9px] font-medium text-rose-400/70 hover:text-rose-400 transition-colors cursor-pointer bg-white/[0.02] hover:bg-rose-500/10 px-2 py-0.5 rounded-full"
             >
               Limpar
             </button>
-          </div>
+          </div> */}
 
           <div className="flex-1 overflow-x-auto overflow-y-hidden flex items-center gap-2.5 pr-2 py-1 scrollbar-none">
             {files.map((file) => (

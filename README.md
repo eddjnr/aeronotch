@@ -66,6 +66,13 @@ AeroNotch is built around Apple-like design principles:
 
 - **Quick Look**: A compact calendar widget showing current weekday, day, and month alongside a digital clock.
 
+### 📁 File Tray Widget (Bandeja de Arquivos)
+
+- **Drag-and-Drop Stash**: Drag any file or directory from Windows Explorer directly onto the Dynamic Island to cache it in memory. Auto-expands compact notches on hover.
+- **Persistent Storage**: Cached files are retained across application restarts using a secure, local-storage state mechanism.
+- **Clipboard Operations**: Copy files to your clipboard in native Windows format, allowing instant `Ctrl + V` pasting into Windows Explorer.
+- **Quick Controls**: Double-click files to open them with default applications or click options to reveal folders in Explorer or remove them from memory.
+
 ### ⚙️ macOS-Style Preferences Panel
 
 - **Sidebar Navigation**: Clean, native sidebar navigation with card-based options grouped in iOS-style rounded layouts.
@@ -76,10 +83,10 @@ AeroNotch is built around Apple-like design principles:
 
 ## ⚡ Tech Stack
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand, Radix UI / Shadcn
 - **Backend**: Rust, Tauri v2
 - **Natives / APIs**:
-  - `windows-rs` (system SMTC media tracking and volume commands)
+  - `windows-rs` (native Win32 SMTC media sync, volume controls, and global memory clipboard copier)
   - `sysinfo` (Rust-based ultra-fast system hardware metrics)
 
 ---

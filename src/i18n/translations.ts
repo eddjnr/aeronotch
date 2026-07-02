@@ -232,7 +232,7 @@ export const translations = {
       "Relógio elegante na barra superior, visível em estados compactos.",
     lblTrayWidget: "Bandeja de Arquivos",
     descTrayWidget:
-      "Bandeja temporária para guardar arquivos para copiar, renomear ou abrir rapidamente.",
+      "Bandeja para guardar arquivos para copiar, ou abrir rapidamente.",
 
     // Upcoming Extensions
     lblUpcomingExtensions: "Próximas Extensões",
