@@ -17,7 +17,11 @@ import {
 import { useTrayStore, TrayFile } from "../../stores/tray-store";
 import { useIslandStore } from "../../stores/island-store";
 import { useTranslation } from "../../hooks/useTranslation";
-import { copyFilesToClipboard, revealInExplorer, openFileOnDisk } from "../../lib/tauri-commands";
+import {
+  copyFilesToClipboard,
+  revealInExplorer,
+  openFileOnDisk,
+} from "../../lib/tauri-commands";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -54,17 +58,40 @@ function getFileIcon(extension: string, isDir: boolean) {
   if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) {
     return <Archive className="w-8 h-8 text-orange-400 fill-orange-400/10" />;
   }
-  if (["html", "css", "js", "ts", "jsx", "tsx", "json", "rs", "py", "cpp", "c", "java", "cs", "go"].includes(ext)) {
+  if (
+    [
+      "html",
+      "css",
+      "js",
+      "ts",
+      "jsx",
+      "tsx",
+      "json",
+      "rs",
+      "py",
+      "cpp",
+      "c",
+      "java",
+      "cs",
+      "go",
+    ].includes(ext)
+  ) {
     return <Code className="w-8 h-8 text-emerald-400 fill-emerald-400/10" />;
   }
-  if (["txt", "md", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)) {
-    return <FileText className="w-8 h-8 text-neutral-300 fill-neutral-300/10" />;
+  if (
+    ["txt", "md", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(
+      ext,
+    )
+  ) {
+    return (
+      <FileText className="w-8 h-8 text-neutral-300 fill-neutral-300/10" />
+    );
   }
   return <File className="w-8 h-8 text-neutral-400 fill-neutral-400/10" />;
 }
 
 export function TrayWidget() {
-  const { files, removeFile, clearTray } = useTrayStore();
+  const { files, removeFile } = useTrayStore();
   const { t } = useTranslation();
   const setIsDropdownOpen = useIslandStore((s) => s.setIsDropdownOpen);
 
