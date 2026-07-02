@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: IslandSettings = {
   showWeather: true,
   showClock: true,
   opacity: 1,
+  language: "en",
 };
 
 export const useSettingsStore = create<SettingsState>()(

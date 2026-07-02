@@ -9,6 +9,7 @@ import {
   Snowflake,
 } from 'lucide-react';
 import type { WeatherInfo, IslandMode } from '../../types';
+import { useTranslation, getWeatherDescriptionKey } from '../../hooks/useTranslation';
 
 interface WeatherWidgetProps {
   weather: WeatherInfo | null;
@@ -29,12 +30,14 @@ export function getWeatherIcon(code: number, _isDay: boolean, className: string 
 }
 
 export function WeatherWidget({ weather, mode }: WeatherWidgetProps) {
+  const { t } = useTranslation();
+
   if (!weather) {
     if (mode === 'expanded') {
       return (
         <div className="flex items-center gap-1.5">
           <Cloud className="w-3.5 h-3.5 text-white/20" />
-          <span className="text-[10px] text-white/30">Loading...</span>
+          <span className="text-[10px] text-white/30">{t('loading')}</span>
         </div>
       );
     }
@@ -65,10 +68,10 @@ export function WeatherWidget({ weather, mode }: WeatherWidgetProps) {
           </span>
         </div>
         <span className="text-[9px] text-white/40 leading-tight">
-          {weather.weather_description}
+          {t(getWeatherDescriptionKey(weather.weather_code) as any)}
         </span>
         <span className="text-[9px] text-white/30 leading-tight">
-          Feels like {Math.round(weather.apparent_temperature)}°
+          {t('feelsLike', { temp: Math.round(weather.apparent_temperature) })}
         </span>
       </div>
     </div>

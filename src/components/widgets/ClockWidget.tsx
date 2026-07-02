@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { IslandMode } from '../../types';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface ClockWidgetProps {
   mode: IslandMode;
@@ -7,6 +8,7 @@ interface ClockWidgetProps {
 
 export function ClockWidget({ mode }: ClockWidgetProps) {
   const [time, setTime] = useState(new Date());
+  const { language } = useTranslation();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -32,7 +34,7 @@ export function ClockWidget({ mode }: ClockWidgetProps) {
     month: 'long',
     day: 'numeric',
   };
-  const dateStr = time.toLocaleDateString('en-US', options);
+  const dateStr = time.toLocaleDateString(language === 'pt-BR' ? 'pt-BR' : 'en-US', options);
 
   return (
     <div className="flex flex-col">

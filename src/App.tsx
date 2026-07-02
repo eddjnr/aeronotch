@@ -6,14 +6,18 @@ import { useSystemInfo } from './hooks/useSystemInfo';
 import { useMediaInfo } from './hooks/useMediaInfo';
 import { useWeatherInfo } from './hooks/useWeatherInfo';
 
-// Resolve window label synchronously on startup to prevent initial-render layout/sizing thrashing
-let initialLabel = 'main';
+// Resolve window label synchronously on startup using URL parameters or Tauri API
+const params = new URLSearchParams(window.location.search);
+let initialLabel = params.get('window') || 'main';
+
 try {
-  initialLabel = getCurrentWebviewWindow().label;
+  // If we are in Tauri and the webview window label is already resolved, prioritize it
+  const tauriLabel = getCurrentWebviewWindow().label;
+  if (tauriLabel) {
+    initialLabel = tauriLabel;
+  }
 } catch {
-  // Web browser fallback
-  const params = new URLSearchParams(window.location.search);
-  initialLabel = params.get('window') || 'main';
+  // Fallback to URL parameter or 'main'
 }
 
 function App() {

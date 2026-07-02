@@ -33,6 +33,10 @@ windows = { version = "0.58.0", features = [
     "Media_Control",
     "Storage_Streams",
     "Foundation",
+    "Win32_Graphics_Dwm",
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Controls",
 ] }
 chrono = "0.4.45"
 urlencoding = "2.1.3"

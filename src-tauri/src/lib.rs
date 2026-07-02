@@ -76,6 +76,7 @@ async fn set_weather_location(
     Ok(())
 }
 
+
 /// Resizes the island window and positions it at the top of the screen.
 #[tauri::command]
 async fn set_island_size(
@@ -128,7 +129,7 @@ async fn open_settings_window(app_handle: tauri::AppHandle) -> Result<(), String
     let settings_window = tauri::WebviewWindowBuilder::new(
         &app_handle,
         "settings",
-        tauri::WebviewUrl::App("index.html".into()),
+        tauri::WebviewUrl::App("index.html?window=settings".into()),
     )
     .title("AeroNotch Preferences")
     .inner_size(800.0, 580.0)
@@ -233,6 +234,8 @@ pub fn run() {
 
             // Show window after positioning
             let _ = window.show();
+
+
 
             // ── Tray Icon ──
             let quit = MenuItem::with_id(app, "quit", "Quit AeroNotch", true, None::<&str>)?;

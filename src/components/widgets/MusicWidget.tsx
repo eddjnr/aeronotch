@@ -6,14 +6,13 @@ import {
   Pause,
   SkipForward,
   Music,
-  Shuffle,
-  Star,
 } from "lucide-react";
 import { SPRING } from "../../lib/animation-config";
 import { mediaControl, mediaSeek } from "../../lib/tauri-commands";
 import { ProgressBar } from "./ProgressBar";
 import { Equalizer } from "../island/Equalizer";
 import type { MediaInfo, IslandMode } from "../../types";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface MusicWidgetProps {
   media: MediaInfo | null;
@@ -21,6 +20,7 @@ interface MusicWidgetProps {
 }
 
 export function MusicWidget({ media, mode }: MusicWidgetProps) {
+  const { t } = useTranslation();
   const [localIsPlaying, setLocalIsPlaying] = useState(
     media?.is_playing ?? false,
   );
@@ -35,7 +35,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
     if (mode === "expanded") {
       return (
         <div className="flex items-center justify-center h-full text-white/30 text-sm">
-          No music playing
+          {t("noMusic")}
         </div>
       );
     }
@@ -121,15 +121,8 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
         />
       </div>
 
-      {/* Bottom Section: Controls (Shuffle, Prev, Play/Pause, Next, Star) */}
-      <div className="flex items-center justify-between px-2 w-full select-none">
-        <button
-          type="button"
-          className="text-white/30 hover:text-white transition-colors cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
-        >
-          <Shuffle className="w-3.5 h-3.5" />
-        </button>
-
+      {/* Bottom Section: Controls (Prev, Play/Pause, Next) */}
+      <div className="flex items-center justify-center gap-8 w-full select-none">
         <button
           type="button"
           onClick={() => mediaControl("Previous")}
@@ -185,13 +178,6 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
           className="text-white/60 hover:text-white transition-colors cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
         >
           <SkipForward className="w-4 h-4" fill="currentColor" />
-        </button>
-
-        <button
-          type="button"
-          className="text-white/30 hover:text-white transition-colors cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
-        >
-          <Star className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

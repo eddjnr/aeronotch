@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSettingsStore } from "../../stores/settings-store";
+import { useTranslation } from "../../hooks/useTranslation";
 import {
   Music,
   Calendar,
@@ -18,6 +19,13 @@ import {
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { emit } from "@tauri-apps/api/event";
 import { SpinningText } from "@/components/ui/spinnig-text";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   connectGoogleCalendar,
@@ -53,6 +61,7 @@ function IOSSwitch({
 
 export function SettingsPanel() {
   const settings = useSettingsStore();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<
     "general" | "widgets" | "integrations" | "about"
   >("general");
@@ -157,6 +166,13 @@ export function SettingsPanel() {
     );
   };
 
+  const handleLanguageChange = (lang: "en" | "pt-BR") => {
+    settings.updateSetting("language", lang);
+    emit("settings-changed", { key: "language", value: lang }).catch(
+      console.error,
+    );
+  };
+
   const handleResetSettings = () => {
     settings.resetSettings();
     // Emit all defaults to synchronize island in real-time
@@ -168,6 +184,7 @@ export function SettingsPanel() {
       showWeather: true,
       showClock: true,
       opacity: 0.92,
+      language: "en",
     };
     Object.entries(defaults).forEach(([key, value]) => {
       emit("settings-changed", { key, value }).catch(console.error);
@@ -177,7 +194,7 @@ export function SettingsPanel() {
   return (
     <div className="flex h-full w-full bg-[#f5f5f7] text-[#1d1d1f] font-sans overflow-hidden">
       {/* LEFT SIDEBAR (Primary Navigation) */}
-      <div className="w-56 bg-[#e8e8ea] border-r border-[#d9d9d9] flex flex-col justify-between flex-shrink-0 select-none">
+      <div className="w-48 bg-[#e8e8ea] border-r border-[#d9d9d9] flex flex-col justify-between flex-shrink-0 select-none">
         <div className="flex flex-col pt-6 px-3">
           {/* Brand Identity Header */}
           <div className="flex items-center gap-2.5 px-3 mb-6">
@@ -191,7 +208,7 @@ export function SettingsPanel() {
                 AeroNotch
               </span>
               <span className="text-[9px] text-[#86868b] mt-0.5">
-                Preferences
+                {t("brandSubtitle")}
               </span>
             </div>
           </div>
@@ -211,7 +228,7 @@ export function SettingsPanel() {
                   activeTab === "general" ? "text-white" : "text-[#555557]"
                 }`}
               />
-              <span>General</span>
+              <span>{t("tabGeneral")}</span>
             </button>
 
             <button
@@ -227,7 +244,7 @@ export function SettingsPanel() {
                   activeTab === "widgets" ? "text-white" : "text-[#555557]"
                 }`}
               />
-              <span>Widgets</span>
+              <span>{t("tabWidgets")}</span>
             </button>
 
             <button
@@ -243,7 +260,7 @@ export function SettingsPanel() {
                   activeTab === "integrations" ? "text-white" : "text-[#555557]"
                 }`}
               />
-              <span>Integrations</span>
+              <span>{t("tabIntegrations")}</span>
             </button>
 
             <button
@@ -259,7 +276,7 @@ export function SettingsPanel() {
                   activeTab === "about" ? "text-white" : "text-[#555557]"
                 }`}
               />
-              <span>About</span>
+              <span>{t("tabAbout")}</span>
             </button>
           </nav>
         </div>
@@ -286,28 +303,27 @@ export function SettingsPanel() {
               {/* Header */}
               <div>
                 <h1 className="text-[22px] font-bold text-[#1d1d1f] tracking-tight">
-                  General
+                  {t("generalTitle")}
                 </h1>
                 <p className="text-[13px] text-[#86868b] mt-1">
-                  Configure window positioning, transparency, and launch
-                  properties.
+                  {t("generalSubtitle")}
                 </p>
               </div>
 
               {/* iOS-Style Settings Group (Appearance) */}
               <div className="flex flex-col">
                 <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
-                  Appearance & Placement
+                  {t("groupAppearance")}
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Screen Position */}
                   <div className="flex items-center justify-between p-4 bg-white">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
-                        Screen Position
+                        {t("lblScreenPosition")}
                       </span>
                       <span className="text-xs text-[#86868b] mt-0.5">
-                        Choose which part of the bezel the notch attaches to.
+                        {t("descScreenPosition")}
                       </span>
                     </div>
                     <div className="flex bg-[#e8e8ea] rounded-lg p-0.5 border border-black/5">
@@ -323,10 +339,10 @@ export function SettingsPanel() {
                             }`}
                           >
                             {pos === "top-left"
-                              ? "Left"
+                              ? t("posLeft")
                               : pos === "top-center"
-                                ? "Center"
-                                : "Right"}
+                                ? t("posCenter")
+                                : t("posRight")}
                           </button>
                         ),
                       )}
@@ -337,10 +353,10 @@ export function SettingsPanel() {
                   <div className="flex items-center justify-between p-4 bg-white">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
-                        Island Opacity
+                        {t("lblOpacity")}
                       </span>
                       <span className="text-xs text-[#86868b] mt-0.5">
-                        Set the translucency level of the island backdrop.
+                        {t("descOpacity")}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 w-40">
@@ -353,7 +369,7 @@ export function SettingsPanel() {
                         onChange={handleOpacityChange}
                         className="flex-1 h-1 bg-[#e8e8ea] rounded-lg appearance-none cursor-pointer accent-[#007aff] outline-none"
                       />
-                      <span className="font-mono font-semibold text-xs text-[#1d1d1f] w-8 text-right">
+                      <span className="font-semibold text-xs text-[#1d1d1f] w-8 text-right">
                         {Math.round(settings.opacity * 100)}%
                       </span>
                     </div>
@@ -361,20 +377,54 @@ export function SettingsPanel() {
                 </div>
               </div>
 
+              {/* iOS-Style Settings Group (Language) */}
+              <div className="flex flex-col">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
+                  {t("groupLanguage")}
+                </span>
+                <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                  {/* Language Selector */}
+                  <div className="flex items-center justify-between p-4 bg-white">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold text-[#1d1d1f]">
+                        {t("lblLanguage")}
+                      </span>
+                      <span className="text-xs text-[#86868b] mt-0.5">
+                        {t("descLanguage")}
+                      </span>
+                    </div>
+                    <Select
+                      value={settings.language || "en"}
+                      onValueChange={(val) =>
+                        handleLanguageChange(val as "en" | "pt-BR")
+                      }
+                    >
+                      <SelectTrigger className="w-40 text-xs font-semibold bg-[#e8e8ea] border-none text-[#1d1d1f] hover:bg-black/5 transition-colors rounded-xl h-9 px-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-black/5 shadow-md rounded-xl p-1">
+                        <SelectItem value="en">{t("langEn")}</SelectItem>
+                        <SelectItem value="pt-BR">{t("langPtBR")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
               {/* iOS-Style Settings Group (System) */}
               <div className="flex flex-col">
                 <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
-                  System Preferences
+                  {t("groupSystem")}
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Launch on Startup */}
                   <div className="flex items-center justify-between p-4 bg-white">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
-                        Launch on Startup
+                        {t("lblLaunchStartup")}
                       </span>
                       <span className="text-xs text-[#86868b] mt-0.5">
-                        Start AeroNotch automatically when logging into Windows.
+                        {t("descLaunchStartup")}
                       </span>
                     </div>
                     <IOSSwitch
@@ -387,10 +437,10 @@ export function SettingsPanel() {
                   <div className="flex items-center justify-between p-4 bg-white hover:bg-red-50/20 transition-colors">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
-                        Reset to Defaults
+                        {t("lblResetDefaults")}
                       </span>
                       <span className="text-xs text-[#86868b] mt-0.5">
-                        Restore all settings to their original factory values.
+                        {t("descResetDefaults")}
                       </span>
                     </div>
                     <button
@@ -398,7 +448,7 @@ export function SettingsPanel() {
                       className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-red-500 text-xs font-semibold transition-all cursor-pointer outline-none"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Reset Settings</span>
+                      <span>{t("btnResetSettings")}</span>
                     </button>
                   </div>
                 </div>
@@ -418,17 +468,17 @@ export function SettingsPanel() {
               {/* Header */}
               <div>
                 <h1 className="text-[22px] font-bold text-[#1d1d1f] tracking-tight">
-                  Widgets
+                  {t("widgetsTitle")}
                 </h1>
                 <p className="text-[13px] text-[#86868b] mt-1">
-                  Enable or disable individual information layers on the island.
+                  {t("widgetsSubtitle")}
                 </p>
               </div>
 
               {/* iOS-Style Settings Group (Widgets List) */}
               <div className="flex flex-col">
                 <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
-                  Active Modules
+                  {t("groupActiveModules")}
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Media Player */}
@@ -439,11 +489,10 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
-                          Media Player
+                          {t("lblMusicWidget")}
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Shows track name, artist, sound EQ and timeline
-                          progress.
+                          {t("descMusicWidget")}
                         </span>
                       </div>
                     </div>
@@ -461,11 +510,10 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
-                          Calendar Grid
+                          {t("lblCalendarWidget")}
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Displays the current week schedule and calendar
-                          agenda.
+                          {t("descCalendarWidget")}
                         </span>
                       </div>
                     </div>
@@ -483,11 +531,10 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
-                          System Monitors
+                          {t("lblSystemWidget")}
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Monitors realtime CPU/RAM load, battery and connection
-                          status.
+                          {t("descSystemWidget")}
                         </span>
                       </div>
                     </div>
@@ -505,11 +552,10 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
-                          Weather Details
+                          {t("lblWeatherWidget")}
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Tracks location temperature, warnings and forecast
-                          conditions.
+                          {t("descWeatherWidget")}
                         </span>
                       </div>
                     </div>
@@ -527,10 +573,10 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
-                          Digital Clock
+                          {t("lblClockWidget")}
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Sleek top bar system clock visible in compact states.
+                          {t("descClockWidget")}
                         </span>
                       </div>
                     </div>
@@ -545,7 +591,7 @@ export function SettingsPanel() {
               {/* iOS-Style Settings Group (Upcoming Lists) */}
               <div className="flex flex-col">
                 <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
-                  Upcoming Extensions
+                  {t("lblUpcomingExtensions")}
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden opacity-45 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Quick Apps */}
@@ -556,16 +602,15 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
-                          Quick Apps
+                          {t("lblQuickApps")}
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Dock application launching controls in the island
-                          panel.
+                          {t("descQuickApps")}
                         </span>
                       </div>
                     </div>
                     <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
-                      Planned
+                      {t("lblPlanned")}
                     </span>
                   </div>
 
@@ -577,16 +622,15 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
-                          To-dos & Tasks
+                          {t("lblTodos")}
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
-                          Keep track of active checklists directly from the
-                          bezel.
+                          {t("descTodos")}
                         </span>
                       </div>
                     </div>
                     <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
-                      Planned
+                      {t("lblPlanned")}
                     </span>
                   </div>
                 </div>
@@ -606,10 +650,10 @@ export function SettingsPanel() {
               {/* Header */}
               <div>
                 <h1 className="text-[22px] font-bold text-[#1d1d1f] tracking-tight">
-                  Integrations
+                  {t("integrationsTitle")}
                 </h1>
                 <p className="text-[13px] text-[#86868b] mt-1">
-                  Link with cloud calendars using direct iCal/ICS feed URLs.
+                  {t("integrationsSubtitle")}
                 </p>
               </div>
 
@@ -623,12 +667,12 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-[#1d1d1f]">
-                          Calendar Subscription
+                          {t("lblCalendarSub")}
                         </span>
                         <span className="text-xs text-[#86868b] mt-0.5">
                           {googleStatus?.connected
-                            ? "Connected and syncing in real-time"
-                            : "Display schedules from Google, Outlook, or Apple Calendar."}
+                            ? t("descCalendarSubConnected")
+                            : t("descCalendarSubDisconnected")}
                         </span>
                       </div>
                     </div>
@@ -639,7 +683,7 @@ export function SettingsPanel() {
                           onClick={handleDisconnectGoogle}
                           className="bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 text-[#ff3b30] text-xs font-semibold px-3.5 py-1.5 rounded-lg cursor-pointer transition-colors"
                         >
-                          Disconnect
+                          {t("btnDisconnect")}
                         </button>
                       )}
                     </div>
@@ -648,14 +692,14 @@ export function SettingsPanel() {
                   {!googleStatus?.connected ? (
                     <div className="flex flex-col gap-2">
                       <label className="text-xs font-medium text-[#555557]">
-                        Secret Address in iCal format (.ics Link)
+                        {t("lblSecretIcsAddress")}
                       </label>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={calendarUrl}
                           onChange={(e) => setCalendarUrl(e.target.value)}
-                          placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
+                          placeholder={t("phIcsLink")}
                           className="flex-1 bg-[#f5f5f7] border border-black/10 rounded-lg px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-[#86868b] outline-none focus:bg-white focus:border-[#007aff] focus:ring-1 focus:ring-[#007aff] transition-all"
                         />
                         <button
@@ -663,7 +707,9 @@ export function SettingsPanel() {
                           disabled={isConnecting}
                           className="bg-[#007aff] hover:bg-[#0062cc] disabled:bg-[#007aff]/50 text-white text-xs font-semibold px-4 py-2 rounded-lg cursor-pointer transition-colors disabled:opacity-50 flex-shrink-0"
                         >
-                          {isConnecting ? "Syncing..." : "Sync Calendar"}
+                          {isConnecting
+                            ? t("btnSyncing")
+                            : t("btnSyncCalendar")}
                         </button>
                       </div>
                     </div>
@@ -671,7 +717,7 @@ export function SettingsPanel() {
                     <div className="bg-[#f5f5f7] p-4 rounded-lg border border-black/5 flex flex-col gap-3">
                       <div>
                         <span className="text-[10px] text-[#86868b] font-bold block uppercase tracking-wider">
-                          Synced Link
+                          {t("lblSyncedLink")}
                         </span>
                         <span className="text-xs text-[#1d1d1f] break-all block mt-1 font-mono bg-white p-2.5 rounded-md border border-black/5 select-text">
                           {googleStatus.url}
@@ -679,7 +725,7 @@ export function SettingsPanel() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-[#34c759] font-semibold">
                         <span className="w-2 h-2 rounded-full bg-[#34c759] animate-pulse" />
-                        Active Sync (updates every 15 minutes)
+                        {t("lblActiveSync")}
                       </div>
                     </div>
                   )}
@@ -693,13 +739,13 @@ export function SettingsPanel() {
                   {/* Guideline instructions */}
                   <div className="border-t border-black/5 pt-4">
                     <span className="text-xs font-semibold text-[#1d1d1f] block mb-2">
-                      How to find your iCal link:
+                      {t("instructionsTitle")}
                     </span>
                     <ol className="text-xs text-[#555557] leading-relaxed list-decimal list-inside flex flex-col gap-1.5">
                       <li>
                         Open{" "}
                         <strong className="text-[#1d1d1f]">
-                          Google Calendar
+                          {t("lblGoogleCalendar")}
                         </strong>{" "}
                         in your web browser.
                       </li>
@@ -708,18 +754,22 @@ export function SettingsPanel() {
                         the <strong className="text-[#1d1d1f]">3 dots</strong>{" "}
                         icon, and choose{" "}
                         <strong className="text-[#1d1d1f]">
-                          Settings and sharing
+                          {t("instructionStep2").split("choose ")[1] ||
+                            "Settings and sharing"}
                         </strong>
                         .
                       </li>
                       <li>
                         Scroll down to the{" "}
                         <strong className="text-[#1d1d1f]">
-                          Integrate calendar
+                          {t("instructionStep3")
+                            .split("to the ")[1]
+                            ?.split(" section")[0] || "Integrate calendar"}
                         </strong>{" "}
                         section and copy the{" "}
                         <strong className="text-[#1d1d1f]">
-                          Secret address in iCal format
+                          {t("instructionStep3").split("copy the ")[1] ||
+                            "Secret address in iCal format"}
                         </strong>
                         .
                       </li>
@@ -788,19 +838,17 @@ export function SettingsPanel() {
                   AeroNotch
                 </h1>
                 <span className="text-[10px] text-[#86868b] font-semibold leading-none mt-1 inline-block">
-                  Version 0.1.0 (Stable)
+                  {t("lblVersion")}
                 </span>
               </div>
 
               <p className="text-xs text-[#515154] max-w-sm leading-relaxed mt-1">
-                AeroNotch is an Apple-inspired Dynamic Island utility built with
-                Tauri, Rust, and React, bringing elegant information delivery
-                and system controls to the Windows Desktop bezel.
+                {t("lblDescription")}
               </p>
 
               <div className="flex items-center gap-1.5 text-[10px] text-[#86868b] mt-4">
                 <HeartHandshake className="w-4 h-4 text-[#ff2d55]" />
-                <span>Built by pair-programming with Antigravity</span>
+                <span>{t("lblBuiltWith")}</span>
               </div>
             </motion.div>
           )}

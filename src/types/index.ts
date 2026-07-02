@@ -25,6 +25,8 @@ export interface SystemStats {
   gpu_name: string;
   gpu_usage: number;
   disks: DiskStats[];
+  cpu_temp?: number | null;
+  gpu_temp?: number | null;
 }
 
 export interface WeatherInfo {
@@ -47,4 +49,5 @@ export interface IslandSettings {
   showWeather: boolean;
   showClock: boolean;
   opacity: number;
+  language: 'en' | 'pt-BR';
 }

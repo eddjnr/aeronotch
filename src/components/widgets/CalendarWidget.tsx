@@ -3,6 +3,7 @@ import { CalendarCheck } from 'lucide-react';
 import { listen } from '@tauri-apps/api/event';
 import type { IslandMode } from '../../types';
 import { getCalendarEvents } from '../../lib/tauri-commands';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface CalendarWidgetProps {
   mode: IslandMode;
@@ -12,6 +13,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const { t, language } = useTranslation();
 
   // Helper to check if two Date objects fall on the same calendar day
   const isSameDay = (d1: Date, d2: Date) => {
@@ -56,14 +58,21 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
 
   const weekData = useMemo(() => {
     const todayRef = new Date();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const days = [];
+    const locale = language === 'pt-BR' ? 'pt-BR' : 'en-US';
 
     for (let i = -3; i <= 3; i++) {
       const date = new Date(todayRef);
       date.setDate(todayRef.getDate() + i);
+      
+      let dayName = date.toLocaleDateString(locale, { weekday: 'short' });
+      // Clean up trailing dots if any (e.g. "sex." -> "sex")
+      dayName = dayName.replace('.', '');
+      // Capitalize first letter
+      dayName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+
       days.push({
-        name: dayNames[date.getDay()],
+        name: dayName,
         number: date.getDate(),
         isToday: i === 0,
         dayOfWeek: date.getDay(),
@@ -73,10 +82,10 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
 
     return {
       days,
-      month: todayRef.toLocaleString('en-US', { month: 'short' }),
+      month: todayRef.toLocaleString(locale, { month: 'short' }),
       year: todayRef.getFullYear(),
     };
-  }, []);
+  }, [language]);
 
   // Filter events to only show those scheduled on the selected day
   const filteredEvents = useMemo(() => {
@@ -95,7 +104,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
   }, [events, selectedDate]);
 
   const formatEventTime = (event: any) => {
-    if (event.start?.date) return 'All Day';
+    if (event.start?.date) return t('allDay');
     if (!event.start?.dateTime || !event.end?.dateTime) return '';
     const start = new Date(event.start.dateTime);
     const end = new Date(event.end.dateTime);
@@ -193,7 +202,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="w-0.5 h-3 rounded-full bg-[#007aff] flex-shrink-0" />
                   <span className="truncate font-semibold text-white/95">
-                    {event.summary || 'No Title'}
+                    {event.summary || t('noTitle')}
                   </span>
                 </div>
                 <span className="text-[10.5px] text-white/60 font-sans font-medium flex-shrink-0 tabular-nums">
@@ -204,7 +213,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
           ) : (
             <div className="flex items-center gap-2 text-[10px] text-white/45 py-2">
               <CalendarCheck className="w-3.5 h-3.5 text-white/25" />
-              <span className="font-medium">No events for this day</span>
+              <span className="font-medium">{t('noEvents')}</span>
             </div>
           )}
         </div>
