@@ -283,7 +283,7 @@ export function SettingsPanel() {
 
         {/* Footer Credit */}
         <div className="p-4 border-t border-[#d9d9d9]/60 flex items-center justify-between text-[9px] text-[#86868b] font-medium leading-none">
-          <span>AeroNotch v0.1.2</span>
+          <span>AeroNotch v0.1.3</span>
           <HeartHandshake className="w-3 h-3 text-[#ff2d55]" />
         </div>
       </div>
