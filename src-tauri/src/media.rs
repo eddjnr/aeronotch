@@ -27,6 +27,43 @@ pub struct MediaInfo {
     pub app_name: Option<String>,
 }
 
+fn is_allowed_media_app(app_name: &str) -> bool {
+    let app_name_lower = app_name.to_lowercase();
+    let keywords = [
+        "spotify",
+        "deezer",
+        "chrome",
+        "edge",
+        "msedge",
+        "firefox",
+        "mozilla",
+        "brave",
+        "opera",
+        "vivaldi",
+        "arc",
+        "safari",
+        "apple.music",
+        "applemusic",
+        "itunes",
+        "tidal",
+        "amazonmusic",
+        "amazon.music",
+        "youtubemusic",
+        "youtube music",
+        "vlc",
+        "foobar2000",
+        "winamp",
+        "aimp",
+        "roon",
+        "musicbee",
+        "groove",
+        "zunemusic",
+        "wmplayer",
+        "media.player",
+    ];
+    keywords.iter().any(|&kw| app_name_lower.contains(kw))
+}
+
 impl MediaInfo {
     /// Attempts to get the currently playing media info from the OS using SMTC.
     pub async fn get_current() -> Option<MediaInfo> {
@@ -35,7 +72,51 @@ impl MediaInfo {
             .get() // Use blocking .get() since WinRT types don't implement Future directly in this environment
             .ok()?;
 
-        let session = manager.GetCurrentSession().ok()?;
+        let mut target_session = None;
+
+        // 1. Try CurrentSession first
+        if let Ok(current_session) = manager.GetCurrentSession() {
+            if let Ok(app_id) = current_session.SourceAppUserModelId() {
+                if is_allowed_media_app(&app_id.to_string()) {
+                    target_session = Some(current_session);
+                }
+            }
+        }
+
+        // 2. If CurrentSession is not allowed or failed, check all sessions
+        if target_session.is_none() {
+            if let Ok(sessions) = manager.GetSessions() {
+                // Find a session that is allowed and playing
+                for session in &sessions {
+                    if let Ok(app_id) = session.SourceAppUserModelId() {
+                        if is_allowed_media_app(&app_id.to_string()) {
+                            if let Ok(playback_info) = session.GetPlaybackInfo() {
+                                if let Ok(status) = playback_info.PlaybackStatus() {
+                                    if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+                                        target_session = Some(session.clone());
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // If still none, find the first allowed session (even if not playing/paused)
+                if target_session.is_none() {
+                    for session in &sessions {
+                        if let Ok(app_id) = session.SourceAppUserModelId() {
+                            if is_allowed_media_app(&app_id.to_string()) {
+                                target_session = Some(session.clone());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let session = target_session?;
         
         // App name (e.g. Spotify.exe, Chrome.exe)
         let app_name = session.SourceAppUserModelId()

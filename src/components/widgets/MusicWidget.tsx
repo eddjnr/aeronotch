@@ -104,7 +104,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
         {/* Mini Real-time Equalizer */}
         {localIsPlaying && (
           <div className="flex-shrink-0 pr-1 select-none">
-            <Equalizer isPlaying={true} barCount={4} />
+            <Equalizer isPlaying={true} />
           </div>
         )}
       </div>

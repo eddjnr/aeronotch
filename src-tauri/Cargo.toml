@@ -33,6 +33,7 @@ windows = { version = "0.58.0", features = [
     "Media_Control",
     "Storage_Streams",
     "Foundation",
+    "Foundation_Collections",
     "Win32_Graphics_Dwm",
     "Win32_Foundation",
     "Win32_UI_WindowsAndMessaging",

@@ -131,11 +131,10 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 {hasHomeTab && (
                   <button
                     onClick={() => setActiveTab("home")}
-                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
-                      activeTab === "home"
-                        ? "text-white font-bold"
-                        : "text-white/40 hover:text-white/60"
-                    }`}
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${activeTab === "home"
+                      ? "text-white font-bold"
+                      : "text-white/40 hover:text-white/60"
+                      }`}
                   >
                     {activeTab === "home" && (
                       <motion.div
@@ -155,11 +154,10 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 {hasSystemTab && (
                   <button
                     onClick={() => setActiveTab("system")}
-                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
-                      activeTab === "system"
-                        ? "text-white font-bold"
-                        : "text-white/40 hover:text-white/60"
-                    }`}
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${activeTab === "system"
+                      ? "text-white font-bold"
+                      : "text-white/40 hover:text-white/60"
+                      }`}
                   >
                     {activeTab === "system" && (
                       <motion.div
@@ -179,11 +177,10 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 {hasWeatherTab && (
                   <button
                     onClick={() => setActiveTab("weather")}
-                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
-                      activeTab === "weather"
-                        ? "text-white font-bold"
-                        : "text-white/45 hover:text-white/60"
-                    }`}
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${activeTab === "weather"
+                      ? "text-white font-bold"
+                      : "text-white/45 hover:text-white/60"
+                      }`}
                   >
                     {activeTab === "weather" && (
                       <motion.div
@@ -221,11 +218,10 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                     animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                     exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
                     transition={{ duration: 0.14, ease: "easeInOut" }}
-                    className={`grid gap-4 h-full ${
-                      settings.showMusic && settings.showCalendar
-                        ? "grid-cols-[1.2fr_1fr]"
-                        : "grid-cols-1"
-                    }`}
+                    className={`grid gap-4 h-full ${settings.showMusic && settings.showCalendar
+                      ? "grid-cols-[1.2fr_1fr]"
+                      : "grid-cols-1"
+                      }`}
                   >
                     {/* Tab 1: Home (Music, Calendar) */}
                     {settings.showMusic && (
