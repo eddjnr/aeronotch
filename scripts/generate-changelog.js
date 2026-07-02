@@ -17,9 +17,35 @@ function exec(cmd) {
   return execSync(cmd, { encoding: 'utf8', stdio: 'pipe' }).trim();
 }
 
-function getPreviousTag() {
+function getPreviousTag(newVersion) {
   try {
-    return exec('git describe --tags --abbrev=0 2>nul');
+    const tagsRaw = exec('git tag -l');
+    const tags = tagsRaw.split('\n').map(t => t.trim()).filter(Boolean);
+    
+    if (tags.length === 0) return null;
+    
+    function parseVersion(v) {
+      const clean = v.startsWith('v') ? v.substring(1) : v;
+      return clean.split('.').map(Number);
+    }
+    
+    function compareVersions(v1, v2) {
+      const p1 = parseVersion(v1);
+      const p2 = parseVersion(v2);
+      for (let i = 0; i < 3; i++) {
+        if (p1[i] !== p2[i]) return p1[i] - p2[i];
+      }
+      return 0;
+    }
+    
+    const smallerTags = tags.filter(tag => compareVersions(tag, newVersion) < 0);
+    
+    if (smallerTags.length === 0) {
+      return exec('git describe --tags --abbrev=0');
+    }
+    
+    smallerTags.sort((a, b) => compareVersions(b, a));
+    return smallerTags[0];
   } catch {
     return null;
   }
@@ -105,7 +131,7 @@ if (!newVersion) {
   process.exit(1);
 }
 
-const prevTag = getPreviousTag();
+const prevTag = getPreviousTag(newVersion);
 const commits = getCommitsSinceTag(prevTag);
 const changelog = buildChangelog(commits, newVersion);
 

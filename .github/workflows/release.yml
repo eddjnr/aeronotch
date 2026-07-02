@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -38,10 +40,28 @@ jobs:
         id: version
         shell: bash
         run: |
-          CURRENT=$(node -p "require('./package.json').version")
-          IFS=. read -ra PARTS <<< "$CURRENT"
-          NEXT="${PARTS[0]}.${PARTS[1]}.$((PARTS[2] + 1))"
-          echo "new_version=$NEXT" >> "$GITHUB_OUTPUT"
+          NEXT_VERSION=$(node -e '
+            const { execSync } = require("child_process");
+            function tagExists(v) {
+              try {
+                return execSync("git tag -l v" + v, { encoding: "utf8", stdio: "pipe" }).trim() !== "";
+              } catch {
+                return false;
+              }
+            }
+            const current = require("./package.json").version;
+            let next = current;
+            if (tagExists(next)) {
+              const parts = next.split(".").map(Number);
+              next = parts[0] + "." + parts[1] + "." + (parts[2] + 1);
+              while (tagExists(next)) {
+                const p = next.split(".").map(Number);
+                next = p[0] + "." + p[1] + "." + (p[2] + 1);
+              }
+            }
+            console.log(next);
+          ')
+          echo "new_version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Generate changelog
         id: changelog
@@ -60,8 +80,12 @@ jobs:
 
           node scripts/bump-version.js ${{ steps.version.outputs.new_version }}
           git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock src/components/settings/SettingsPanel.tsx src/i18n/translations.ts
-          git commit -m "chore: bump version to v${{ steps.version.outputs.new_version }} [skip ci]"
-          git push origin HEAD:${{ github.ref_name }}
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: bump version to v${{ steps.version.outputs.new_version }} [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "No version bump changes to commit"
+          fi
         shell: bash
 
       - name: Build and Publish Tauri App
