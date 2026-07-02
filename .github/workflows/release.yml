@@ -35,25 +35,37 @@ jobs:
         run: pnpm install
 
       - name: Bump version and push
+        id: bump
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
           NEW_VERSION=$(node scripts/bump-version.js)
           echo "New version: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           
-          git add package.json src-tauri/tauri.conf.json
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock src/components/settings/SettingsPanel.tsx src/i18n/translations.ts
           git commit -m "chore: bump version to v$NEW_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}
         shell: bash
+
+      - name: Generate changelog
+        id: changelog
+        shell: bash
+        run: |
+          DELIM="EOF_CHANGELOG"
+          node scripts/generate-changelog.js ${{ steps.bump.outputs.new_version }} > /tmp/changelog.md
+          echo "body<<$DELIM" >> "$GITHUB_OUTPUT"
+          cat /tmp/changelog.md >> "$GITHUB_OUTPUT"
+          echo "$DELIM" >> "$GITHUB_OUTPUT"
 
       - name: Build and Publish Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: 'v__VERSION__' # Auto-extracts version from package.json or tauri.conf.json
+          tagName: 'v__VERSION__'
           releaseName: 'AeroNotch v__VERSION__'
-          releaseDraft: false # Instantly publishes the release
+          releaseDraft: false
           prerelease: false
-          releaseGenerateReleaseNotes: true
+          releaseBody: ${{ steps.changelog.outputs.body }}
