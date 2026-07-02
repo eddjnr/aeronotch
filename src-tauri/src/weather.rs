@@ -37,6 +37,7 @@ pub struct WeatherClient {
     cache: Mutex<Option<(WeatherInfo, Instant)>>,
     latitude: Mutex<f64>,
     longitude: Mutex<f64>,
+    is_localized: Mutex<bool>,
 }
 
 impl WeatherClient {
@@ -46,6 +47,7 @@ impl WeatherClient {
             // Default: São Paulo, Brazil — user can change in settings
             latitude: Mutex::new(-23.5505),
             longitude: Mutex::new(-46.6333),
+            is_localized: Mutex::new(false),
         }
     }
 
@@ -53,12 +55,55 @@ impl WeatherClient {
     pub fn set_location(&self, lat: f64, lon: f64) {
         *self.latitude.lock().unwrap() = lat;
         *self.longitude.lock().unwrap() = lon;
+        *self.is_localized.lock().unwrap() = true; // Prevents auto-detect from overwriting manual location
         // Clear cache to force re-fetch with new coords
         *self.cache.lock().unwrap() = None;
     }
 
+    async fn auto_detect_location(&self) -> Result<(f64, f64), String> {
+        #[derive(Deserialize)]
+        struct IpApiResponse {
+            lat: f64,
+            lon: f64,
+        }
+
+        #[derive(Deserialize)]
+        struct FreeIpApiResponse {
+            latitude: f64,
+            longitude: f64,
+        }
+
+        // Try ip-api.com first
+        if let Ok(res) = reqwest::get("http://ip-api.com/json").await {
+            if let Ok(data) = res.json::<IpApiResponse>().await {
+                return Ok((data.lat, data.lon));
+            }
+        }
+
+        // Try freeipapi.com as fallback
+        if let Ok(res) = reqwest::get("https://freeipapi.com/api/json").await {
+            if let Ok(data) = res.json::<FreeIpApiResponse>().await {
+                return Ok((data.latitude, data.longitude));
+            }
+        }
+
+        Err("Failed to auto-detect location".to_string())
+    }
+
     /// Fetch current weather, returning a cached value when still fresh.
     pub async fn get_weather(&self) -> Result<WeatherInfo, String> {
+        // Try to auto-detect location on the first request if not already localized
+        let should_detect = {
+            !*self.is_localized.lock().unwrap()
+        };
+        if should_detect {
+            if let Ok(loc) = self.auto_detect_location().await {
+                *self.latitude.lock().unwrap() = loc.0;
+                *self.longitude.lock().unwrap() = loc.1;
+                *self.is_localized.lock().unwrap() = true;
+            }
+        }
+
         // Check cache (15-minute TTL)
         if let Some((cached, timestamp)) = self.cache.lock().unwrap().as_ref() {
             if timestamp.elapsed() < Duration::from_secs(900) {
