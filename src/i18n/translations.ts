@@ -92,7 +92,7 @@ export const translations = {
     aboutTitle: "About",
     aboutSubtitle:
       "AeroNotch is a premium, customizable desktop accessory for Windows.",
-    lblVersion: "Version 0.1.3 (Stable)",
+    lblVersion: "Version 0.1.4 (Stable)",
     lblDescription:
       "AeroNotch is an Apple-inspired Dynamic Island utility built with Tauri, Rust, and React, bringing elegant information delivery and system controls to the Windows Desktop bezel.",
     lblBuiltWith: "Built by pair-programming with Antigravity",
@@ -270,7 +270,7 @@ export const translations = {
     aboutTitle: "Sobre",
     aboutSubtitle:
       "O AeroNotch é um acessório de desktop premium e personalizável para o Windows.",
-    lblVersion: "Versão 0.1.3 (Estável)",
+    lblVersion: "Versão 0.1.4 (Estável)",
     lblDescription:
       "O AeroNotch é um utilitário de Dynamic Island inspirado na Apple, construído com Tauri, Rust e React, trazendo entrega elegante de informações e controles de sistema para a moldura do Windows.",
     lblBuiltWith: "Desenvolvido em pair-programming com Antigravity",
