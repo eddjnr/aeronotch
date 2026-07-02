@@ -96,3 +96,19 @@ export async function openFileOnDisk(path: string): Promise<void> {
   return invoke('open_file_on_disk', { path });
 }
 
+export interface MonitorInfo {
+  index: number;
+  name: string | null;
+  width: number;
+  height: number;
+  is_primary: boolean;
+}
+
+export async function getAvailableMonitors(): Promise<MonitorInfo[]> {
+  return invoke<MonitorInfo[]>('get_available_monitors');
+}
+
+export async function syncMonitorWindows(placement: string): Promise<void> {
+  return invoke('sync_monitor_windows', { placement });
+}
+

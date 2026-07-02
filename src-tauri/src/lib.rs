@@ -96,17 +96,166 @@ async fn set_island_size(
         let scale = monitor.scale_factor();
         let logical_screen_w = screen.width as f64 / scale;
         
+        let monitor_pos = monitor.position();
+        let monitor_logical_x = monitor_pos.x as f64 / scale;
+        let monitor_logical_y = monitor_pos.y as f64 / scale;
+        
         let x = match position.as_str() {
-            "top-left" => 16.0,
-            "top-right" => logical_screen_w - width - 16.0,
-            _ => (logical_screen_w - width) / 2.0, // center
+            "top-left" => monitor_logical_x + 16.0,
+            "top-right" => monitor_logical_x + logical_screen_w - width - 16.0,
+            _ => monitor_logical_x + (logical_screen_w - width) / 2.0, // center
         };
 
         window
-            .set_position(tauri::LogicalPosition::new(x, 0.0))
+            .set_position(tauri::LogicalPosition::new(x, monitor_logical_y))
             .map_err(|e| e.to_string())?;
     }
 
+    Ok(())
+}
+
+#[derive(serde::Serialize)]
+struct MonitorInfo {
+    index: usize,
+    name: Option<String>,
+    width: u32,
+    height: u32,
+    is_primary: bool,
+}
+
+#[tauri::command]
+async fn get_available_monitors(app_handle: tauri::AppHandle) -> Result<Vec<MonitorInfo>, String> {
+    let monitors = app_handle.available_monitors().map_err(|e| e.to_string())?;
+    let primary = app_handle.primary_monitor().map_err(|e| e.to_string())?;
+    
+    let mut list = Vec::new();
+    for (i, m) in monitors.iter().enumerate() {
+        let is_primary = if let Some(ref p) = primary {
+            p.name() == m.name() && p.position() == m.position()
+        } else {
+            i == 0
+        };
+        
+        list.push(MonitorInfo {
+            index: i,
+            name: m.name().map(|s| s.to_string()),
+            width: m.size().width,
+            height: m.size().height,
+            is_primary,
+        });
+    }
+    
+    Ok(list)
+}
+
+fn position_window_on_monitor(
+    window: &tauri::WebviewWindow,
+    monitor: &tauri::Monitor,
+    position_setting: &str,
+) -> Result<(), String> {
+    let size = window.inner_size().map_err(|e| e.to_string())?;
+    let scale = monitor.scale_factor();
+    let logical_width = size.width as f64 / scale;
+    let width = if logical_width > 0.0 { logical_width } else { 496.0 };
+    
+    let monitor_size = monitor.size();
+    let monitor_pos = monitor.position();
+    let logical_screen_w = monitor_size.width as f64 / scale;
+    
+    let monitor_logical_x = monitor_pos.x as f64 / scale;
+    let monitor_logical_y = monitor_pos.y as f64 / scale;
+    
+    let x = match position_setting {
+        "top-left" => monitor_logical_x + 16.0,
+        "top-right" => monitor_logical_x + logical_screen_w - width - 16.0,
+        _ => monitor_logical_x + (logical_screen_w - width) / 2.0, // center
+    };
+    
+    window
+        .set_position(tauri::LogicalPosition::new(x, monitor_logical_y))
+        .map_err(|e| e.to_string())?;
+        
+    Ok(())
+}
+
+#[tauri::command]
+async fn sync_monitor_windows(app_handle: tauri::AppHandle, placement: String) -> Result<(), String> {
+    let monitors = app_handle.available_monitors().map_err(|e| e.to_string())?;
+    let main_window = app_handle.get_webview_window("main").ok_or("Main window not found")?;
+    let position_setting = "top-center"; // Default fallback, set_island_size will override it anyway
+    
+    if placement == "all" {
+        if !monitors.is_empty() {
+            let _ = position_window_on_monitor(&main_window, &monitors[0], position_setting);
+            let _ = main_window.show();
+        }
+        
+        for i in 1..monitors.len() {
+            let label = format!("main_{}", i);
+            if let Some(win) = app_handle.get_webview_window(&label) {
+                let _ = position_window_on_monitor(&win, &monitors[i], position_setting);
+                let _ = win.show();
+            } else {
+                let new_win = tauri::WebviewWindowBuilder::new(
+                    &app_handle,
+                    &label,
+                    tauri::WebviewUrl::App("index.html".into()),
+                )
+                .transparent(true)
+                .decorations(false)
+                .always_on_top(true)
+                .skip_taskbar(true)
+                .resizable(false)
+                .shadow(false)
+                .visible(false)
+                .build()
+                .map_err(|e| e.to_string())?;
+                
+                let _ = position_window_on_monitor(&new_win, &monitors[i], position_setting);
+                let _ = new_win.show();
+            }
+        }
+        
+        let mut i = monitors.len();
+        loop {
+            let label = format!("main_{}", i);
+            if let Some(win) = app_handle.get_webview_window(&label) {
+                let _ = win.close();
+                i += 1;
+            } else {
+                break;
+            }
+        }
+    } else {
+        let target_monitor = if placement == "primary" {
+            app_handle.primary_monitor().map_err(|e| e.to_string())?
+        } else if let Ok(idx) = placement.parse::<usize>() {
+            if idx < monitors.len() {
+                Some(monitors[idx].clone())
+            } else {
+                app_handle.primary_monitor().map_err(|e| e.to_string())?
+            }
+        } else {
+            app_handle.primary_monitor().map_err(|e| e.to_string())?
+        };
+        
+        if let Some(monitor) = target_monitor {
+            let _ = position_window_on_monitor(&main_window, &monitor, position_setting);
+            let _ = main_window.show();
+        }
+        
+        let mut i = 1;
+        loop {
+            let label = format!("main_{}", i);
+            if let Some(win) = app_handle.get_webview_window(&label) {
+                let _ = win.close();
+                i += 1;
+            } else {
+                break;
+            }
+        }
+    }
+    
     Ok(())
 }
 
@@ -362,6 +511,8 @@ pub fn run() {
             reveal_in_explorer,
             rename_file_on_disk,
             open_file_on_disk,
+            get_available_monitors,
+            sync_monitor_windows,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main").unwrap();

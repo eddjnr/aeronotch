@@ -51,4 +51,5 @@ export interface IslandSettings {
   showTray: boolean;
   opacity: number;
   language: 'en' | 'pt-BR';
+  monitorPlacement: string;
 }

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Island } from './components/island/Island';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { useSystemInfo } from './hooks/useSystemInfo';
 import { useMediaInfo } from './hooks/useMediaInfo';
 import { useWeatherInfo } from './hooks/useWeatherInfo';
+import { useSettingsStore } from './stores/settings-store';
+import { syncMonitorWindows } from './lib/tauri-commands';
 
 // Resolve window label synchronously on startup using URL parameters or Tauri API
 const params = new URLSearchParams(window.location.search);
@@ -27,6 +29,14 @@ function App() {
   useSystemInfo();
   useMediaInfo();
   useWeatherInfo();
+
+  // Sync monitor windows on startup
+  useEffect(() => {
+    if (windowLabel === 'main') {
+      const placement = useSettingsStore.getState().monitorPlacement || 'primary';
+      syncMonitorWindows(placement).catch(console.error);
+    }
+  }, [windowLabel]);
 
   if (windowLabel === 'settings') {
     return (

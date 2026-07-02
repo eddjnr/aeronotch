@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS: IslandSettings = {
   showTray: true,
   opacity: 1,
   language: "en",
+  monitorPlacement: "primary",
 };
 
 export const useSettingsStore = create<SettingsState>()(

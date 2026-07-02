@@ -19,6 +19,11 @@ export const translations = {
     posRight: "Right",
     lblOpacity: "Island Opacity",
     descOpacity: "Set the translucency level of the island backdrop.",
+    lblMonitorPlacement: "Monitor Placement",
+    descMonitorPlacement: "Select which monitor(s) to display AeroNotch on.",
+    monitorPrimary: "Primary Monitor Only",
+    monitorAll: "All Monitors",
+    monitorSpecific: "Monitor {index}",
     groupSystem: "System Preferences",
     lblLaunchStartup: "Launch on Startup",
     descLaunchStartup:
@@ -196,6 +201,11 @@ export const translations = {
     posRight: "Direita",
     lblOpacity: "Opacidade da Ilha",
     descOpacity: "Defina o nível de translucidez do fundo da ilha.",
+    lblMonitorPlacement: "Exibição nos Monitores",
+    descMonitorPlacement: "Selecione em qual(is) monitor(es) o AeroNotch deve ser exibido.",
+    monitorPrimary: "Apenas Monitor Principal",
+    monitorAll: "Todos os Monitores",
+    monitorSpecific: "Monitor {index}",
     groupSystem: "Preferências do Sistema",
     lblLaunchStartup: "Iniciar com o Windows",
     descLaunchStartup:

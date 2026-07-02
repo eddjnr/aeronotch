@@ -33,6 +33,9 @@ import {
   disconnectGoogleCalendar,
   getGoogleCalendarStatus,
   GoogleCalendarStatus,
+  getAvailableMonitors,
+  syncMonitorWindows,
+  type MonitorInfo,
 } from "../../lib/tauri-commands";
 
 // Custom macOS/iOS Style Toggle Switch
@@ -73,6 +76,7 @@ export function SettingsPanel() {
   const [calendarUrl, setCalendarUrl] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
 
   // Load Autostart status on mount
   useEffect(() => {
@@ -94,6 +98,11 @@ export function SettingsPanel() {
         }
       })
       .catch(console.error);
+
+    // Fetch available monitors
+    getAvailableMonitors()
+      .then(setMonitors)
+      .catch((e) => console.error("Failed to load monitors", e));
   }, []);
 
   const handleConnectGoogle = async () => {
@@ -175,6 +184,14 @@ export function SettingsPanel() {
     );
   };
 
+  const handleMonitorPlacementChange = (val: string) => {
+    settings.updateSetting("monitorPlacement", val);
+    emit("settings-changed", { key: "monitorPlacement", value: val }).catch(
+      console.error,
+    );
+    syncMonitorWindows(val).catch(console.error);
+  };
+
   const handleResetSettings = () => {
     settings.resetSettings();
     // Emit all defaults to synchronize island in real-time
@@ -188,10 +205,12 @@ export function SettingsPanel() {
       showTray: true,
       opacity: 0.92,
       language: "en",
+      monitorPlacement: "primary",
     };
     Object.entries(defaults).forEach(([key, value]) => {
       emit("settings-changed", { key, value }).catch(console.error);
     });
+    syncMonitorWindows("primary").catch(console.error);
   };
 
   return (
@@ -376,6 +395,46 @@ export function SettingsPanel() {
                         {Math.round(settings.opacity * 100)}%
                       </span>
                     </div>
+                  </div>
+
+                  {/* Monitor Selection */}
+                  <div className="flex items-center justify-between p-4 bg-white">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold text-[#1d1d1f]">
+                        {t("lblMonitorPlacement")}
+                      </span>
+                      <span className="text-xs text-[#86868b] mt-0.5">
+                        {t("descMonitorPlacement")}
+                      </span>
+                    </div>
+                    <Select
+                      value={settings.monitorPlacement || "primary"}
+                      onValueChange={handleMonitorPlacementChange}
+                    >
+                      <SelectTrigger className="w-48 text-xs font-semibold bg-[#e8e8ea] border-none text-[#1d1d1f] hover:bg-black/5 transition-colors rounded-xl h-9 px-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-black/5 shadow-md rounded-xl p-1">
+                        <SelectItem value="primary">{t("monitorPrimary")}</SelectItem>
+                        <SelectItem value="all">{t("monitorAll")}</SelectItem>
+                        {monitors.map((m) => {
+                          let displayName = t("monitorSpecific").replace("{index}", (m.index + 1).toString());
+                          if (m.name) {
+                            const match = m.name.match(/DISPLAY(\d+)/i);
+                            if (match) {
+                              displayName = t("monitorSpecific").replace("{index}", match[1]);
+                            } else {
+                              displayName = m.name;
+                            }
+                          }
+                          return (
+                            <SelectItem key={m.index} value={m.index.toString()}>
+                              {`${displayName} (${m.width}x${m.height})`}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
