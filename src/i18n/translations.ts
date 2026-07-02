@@ -53,6 +53,9 @@ export const translations = {
       "Tracks location temperature, warnings and forecast conditions.",
     lblClockWidget: "Digital Clock",
     descClockWidget: "Sleek top bar system clock visible in compact states.",
+    lblTrayWidget: "File Tray",
+    descTrayWidget:
+      "Temporary holding shelf for files to easily copy, rename or open them.",
 
     // Upcoming Extensions
     lblUpcomingExtensions: "Upcoming Extensions",
@@ -164,6 +167,14 @@ export const translations = {
     layWindSpeed: "Wind Speed",
     layThermalSensation: "Thermal Sensation",
     layFeelsLike: "Feels like",
+    layTray: "Tray",
+    trayEmpty: "Drag and drop files here",
+    trayCopy: "Copy",
+    trayRename: "Rename",
+    trayRemove: "Remove from tray",
+    trayReveal: "Reveal in Explorer",
+    trayOpen: "Open",
+    trayDropOverlay: "Drop files to add to Tray",
   },
   "pt-BR": {
     // Sidebar Tabs
@@ -219,6 +230,9 @@ export const translations = {
     lblClockWidget: "Relógio Digital",
     descClockWidget:
       "Relógio elegante na barra superior, visível em estados compactos.",
+    lblTrayWidget: "Bandeja de Arquivos",
+    descTrayWidget:
+      "Bandeja temporária para guardar arquivos para copiar, renomear ou abrir rapidamente.",
 
     // Upcoming Extensions
     lblUpcomingExtensions: "Próximas Extensões",
@@ -331,5 +345,13 @@ export const translations = {
     layWindSpeed: "Velocidade do Vento",
     layThermalSensation: "Sensação Térmica",
     layFeelsLike: "Sensação de",
+    layTray: "Bandeja",
+    trayEmpty: "Arraste e solte arquivos aqui",
+    trayCopy: "Copiar",
+    trayRename: "Renomear",
+    trayRemove: "Remover da bandeja",
+    trayReveal: "Revelar no Explorer",
+    trayOpen: "Abrir",
+    trayDropOverlay: "Solte os arquivos para adicionar à Bandeja",
   },
 };

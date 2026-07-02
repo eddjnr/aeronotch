@@ -48,6 +48,7 @@ export interface IslandSettings {
   showSystem: boolean;
   showWeather: boolean;
   showClock: boolean;
+  showTray: boolean;
   opacity: number;
   language: 'en' | 'pt-BR';
 }

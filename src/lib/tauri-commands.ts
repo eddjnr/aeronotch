@@ -69,3 +69,30 @@ export async function getCalendarEvents(): Promise<any> {
   return invoke('get_calendar_events');
 }
 
+export interface FileMetadata {
+  name: string;
+  path: string;
+  size: number;
+  is_dir: boolean;
+}
+
+export async function copyFilesToClipboard(paths: string[]): Promise<void> {
+  return invoke('copy_files_to_clipboard', { paths });
+}
+
+export async function getFileMetadata(path: string): Promise<FileMetadata> {
+  return invoke<FileMetadata>('get_file_metadata', { path });
+}
+
+export async function revealInExplorer(path: string): Promise<void> {
+  return invoke('reveal_in_explorer', { path });
+}
+
+export async function renameFileOnDisk(path: string, newName: string): Promise<string> {
+  return invoke<string>('rename_file_on_disk', { path, newName });
+}
+
+export async function openFileOnDisk(path: string): Promise<void> {
+  return invoke('open_file_on_disk', { path });
+}
+

@@ -7,10 +7,13 @@ import { useSettingsStore } from "../../stores/settings-store";
 import { IslandBackground } from "./IslandBackground";
 import { IslandLayout } from "./IslandLayout";
 import type { IslandMode } from "../../types";
+import { useTrayStore } from "../../stores/tray-store";
 
 export function Island() {
-  const { mode, setMode } = useIslandStore();
+  const { mode, setMode, setIsDragging, setActiveTab, isDragging } = useIslandStore();
   const position = useSettingsStore((s) => s.position);
+  const showTray = useSettingsStore((s) => s.showTray);
+  const { addFiles } = useTrayStore();
   const leaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -54,6 +57,57 @@ export function Island() {
     updateWindowSize("compact");
   }, [updateWindowSize]);
 
+  // Global drag & drop listener at window level to auto-expand compact notch
+  useEffect(() => {
+    if (!showTray) return;
+
+    let isCleanedUp = false;
+    let unlistenFn: (() => void) | null = null;
+
+    const setupListener = async () => {
+      try {
+        const { getCurrentWebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+        const appWindow = getCurrentWebviewWindow();
+        
+        const removeListener = await appWindow.onDragDropEvent((event) => {
+          if (isCleanedUp) return;
+          
+          const currentMode = useIslandStore.getState().mode;
+
+          if (event.payload.type === "enter" || event.payload.type === "over") {
+            // If dragging files over a compact/preview island, expand it immediately
+            if (currentMode !== "expanded") {
+              updateWindowSize("expanded");
+              setMode("expanded");
+            }
+            setIsDragging(true);
+          } else if (event.payload.type === "drop") {
+            setIsDragging(false);
+            addFiles(event.payload.paths);
+            setActiveTab("tray");
+          } else if (event.payload.type === "leave") {
+            setIsDragging(false);
+          }
+        });
+
+        if (isCleanedUp) {
+          removeListener();
+        } else {
+          unlistenFn = removeListener;
+        }
+      } catch (err) {
+        console.error("Failed to setup drag and drop listener in Island:", err);
+      }
+    };
+
+    setupListener();
+
+    return () => {
+      isCleanedUp = true;
+      if (unlistenFn) unlistenFn();
+    };
+  }, [showTray, setMode, updateWindowSize, setIsDragging, setActiveTab, addFiles]);
+
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
     if (leaveTimeoutRef.current) {
@@ -70,10 +124,17 @@ export function Island() {
     }
   }, [mode, setMode, updateWindowSize]);
 
+  const isDropdownOpen = useIslandStore((state) => state.isDropdownOpen);
+
   const handleMouseLeave = useCallback(() => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
       hoverTimeoutRef.current = null;
+    }
+    // Block auto-collapse if user is actively dragging a file or a dropdown menu is open
+    if (useIslandStore.getState().isDragging || useIslandStore.getState().isDropdownOpen) {
+      setIsHovered(false);
+      return;
     }
     if (mode !== "compact") {
       leaveTimeoutRef.current = setTimeout(() => {
@@ -99,6 +160,16 @@ export function Island() {
       updateWindowSize("compact");
     }
   }, [mode, updateWindowSize]);
+
+  // Collapse island when dropdown closes / drag ends and mouse is not hovering
+  useEffect(() => {
+    if (!isDropdownOpen && !isDragging && !isHovered && mode !== "compact") {
+      const timer = setTimeout(() => {
+        setMode("compact");
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [isDropdownOpen, isDragging, isHovered, mode, setMode]);
 
   // Handle Escape key to collapse
   useEffect(() => {

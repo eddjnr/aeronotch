@@ -194,6 +194,139 @@ async fn get_calendar_events(app_handle: tauri::AppHandle) -> Result<serde_json:
     }
 }
 
+/// Copies a list of absolute file paths to the Windows clipboard in CF_HDROP format.
+#[tauri::command]
+fn copy_files_to_clipboard(paths: Vec<String>) -> Result<(), String> {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::System::DataExchange::{OpenClipboard, EmptyClipboard, SetClipboardData, CloseClipboard};
+    use windows::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GHND};
+    use windows::Win32::UI::Shell::DROPFILES;
+
+    // 1. Prepare double-null-terminated wide (UTF-16) string for paths
+    let mut buffer: Vec<u16> = Vec::new();
+    for path in paths {
+        let os_str = OsStr::new(&path);
+        buffer.extend(os_str.encode_wide());
+        buffer.push(0); // null terminator for each path
+    }
+    buffer.push(0); // final double-null terminator
+
+    // Size of DROPFILES struct + size of buffer in bytes
+    let dropfiles_size = std::mem::size_of::<DROPFILES>();
+    let total_size = dropfiles_size + (buffer.len() * 2);
+
+    unsafe {
+        // 2. Allocate global memory
+        // GHND is GMEM_MOVEABLE | GMEM_ZEROINIT
+        let h_global = GlobalAlloc(GHND, total_size).map_err(|e| e.to_string())?;
+        let p_global = GlobalLock(h_global);
+        if p_global.is_null() {
+            return Err("Failed to lock global memory".to_string());
+        }
+
+        // 3. Write DROPFILES struct
+        let dropfiles = p_global as *mut DROPFILES;
+        (*dropfiles).pFiles = dropfiles_size as u32;
+        (*dropfiles).fWide = windows::Win32::Foundation::BOOL::from(true); // UTF-16
+
+        // 4. Copy paths buffer right after the DROPFILES struct
+        let p_paths = (p_global as *mut u8).add(dropfiles_size) as *mut u16;
+        std::ptr::copy_nonoverlapping(buffer.as_ptr(), p_paths, buffer.len());
+
+        let _ = GlobalUnlock(h_global);
+
+        // 5. Open and write to clipboard
+        OpenClipboard(HWND::default()).map_err(|e| e.to_string())?;
+        EmptyClipboard().map_err(|e| e.to_string())?;
+        
+        // CF_HDROP is format 15
+        SetClipboardData(15, windows::Win32::Foundation::HANDLE(h_global.0)).map_err(|e| e.to_string())?;
+
+        CloseClipboard().map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+#[derive(serde::Serialize)]
+struct FileMetadata {
+    name: String,
+    path: String,
+    size: u64,
+    is_dir: bool,
+}
+
+/// Retrieves metadata for a file at the given absolute path.
+#[tauri::command]
+fn get_file_metadata(path: String) -> Result<FileMetadata, String> {
+    use std::fs;
+    use std::path::Path;
+
+    let path_buf = Path::new(&path);
+    if !path_buf.exists() {
+        return Err("File does not exist".to_string());
+    }
+
+    let name = path_buf
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.clone());
+
+    let metadata = fs::metadata(path_buf).map_err(|e| e.to_string())?;
+    let size = metadata.len();
+    let is_dir = metadata.is_dir();
+
+    Ok(FileMetadata {
+        name,
+        path,
+        size,
+        is_dir,
+    })
+}
+
+/// Opens Windows Explorer and highlights/selects the file at the given path.
+#[tauri::command]
+fn reveal_in_explorer(path: String) -> Result<(), String> {
+    use std::process::Command;
+    Command::new("explorer")
+        .args(&["/select,", &path])
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Renames a physical file on disk and returns its new absolute path.
+#[tauri::command]
+fn rename_file_on_disk(path: String, new_name: String) -> Result<String, String> {
+    use std::fs;
+    use std::path::Path;
+
+    let old_path = Path::new(&path);
+    if !old_path.exists() {
+        return Err("File does not exist".to_string());
+    }
+
+    let parent = old_path.parent().ok_or("Cannot resolve parent folder")?;
+    let new_path = parent.join(new_name);
+
+    fs::rename(old_path, &new_path).map_err(|e| e.to_string())?;
+
+    Ok(new_path.to_string_lossy().to_string())
+}
+
+/// Opens a file or path with the default system application.
+#[tauri::command]
+fn open_file_on_disk(path: String) -> Result<(), String> {
+    use std::process::Command;
+    Command::new("cmd")
+        .args(&["/c", "start", "", &path])
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 // ── App Setup ───────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -224,6 +357,11 @@ pub fn run() {
             disconnect_google_calendar,
             get_google_calendar_status,
             get_calendar_events,
+            copy_files_to_clipboard,
+            get_file_metadata,
+            reveal_in_explorer,
+            rename_file_on_disk,
+            open_file_on_disk,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main").unwrap();

@@ -15,6 +15,7 @@ import {
   HeartHandshake,
   RotateCcw,
   Link2,
+  Folder,
 } from "lucide-react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { emit } from "@tauri-apps/api/event";
@@ -142,7 +143,8 @@ export function SettingsPanel() {
       | "showCalendar"
       | "showSystem"
       | "showWeather"
-      | "showClock",
+      | "showClock"
+      | "showTray",
   ) => {
     const nextValue = !settings[key];
     settings.updateSetting(key, nextValue);
@@ -183,6 +185,7 @@ export function SettingsPanel() {
       showSystem: true,
       showWeather: true,
       showClock: true,
+      showTray: true,
       opacity: 0.92,
       language: "en",
     };
@@ -583,6 +586,27 @@ export function SettingsPanel() {
                     <IOSSwitch
                       checked={settings.showClock}
                       onChange={() => handleToggleWidget("showClock")}
+                    />
+                  </div>
+
+                  {/* File Tray */}
+                  <div className="flex items-center justify-between p-4 bg-white">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#007aff] text-white shadow-[0_1px_3px_rgba(0,122,255,0.3)] flex-shrink-0">
+                        <Folder className="w-4 h-4" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-[#1d1d1f]">
+                          {t("lblTrayWidget")}
+                        </span>
+                        <span className="text-xs text-[#86868b] mt-0.5">
+                          {t("descTrayWidget")}
+                        </span>
+                      </div>
+                    </div>
+                    <IOSSwitch
+                      checked={settings.showTray}
+                      onChange={() => handleToggleWidget("showTray")}
                     />
                   </div>
                 </div>

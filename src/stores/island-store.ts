@@ -16,6 +16,15 @@ interface IslandState {
 
   settingsOpen: boolean;
   toggleSettings: () => void;
+
+  isDragging: boolean;
+  setIsDragging: (isDragging: boolean) => void;
+
+  activeTab: "home" | "system" | "weather" | "tray";
+  setActiveTab: (tab: "home" | "system" | "weather" | "tray") => void;
+
+  isDropdownOpen: boolean;
+  setIsDropdownOpen: (open: boolean) => void;
 }
 
 export const useIslandStore = create<IslandState>((set) => ({
@@ -33,4 +42,13 @@ export const useIslandStore = create<IslandState>((set) => ({
 
   settingsOpen: false,
   toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),
+
+  isDragging: false,
+  setIsDragging: (isDragging) => set({ isDragging }),
+
+  activeTab: 'home',
+  setActiveTab: (activeTab) => set({ activeTab }),
+
+  isDropdownOpen: false,
+  setIsDropdownOpen: (isDropdownOpen) => set({ isDropdownOpen }),
 }));

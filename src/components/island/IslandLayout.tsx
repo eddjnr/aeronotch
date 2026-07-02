@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence, useWillChange } from "framer-motion";
 import { ClockWidget } from "../widgets/ClockWidget";
 import { MusicWidget } from "../widgets/MusicWidget";
@@ -14,44 +14,58 @@ import {
   Compass,
   Wind,
   Droplets,
+  Folder,
 } from "lucide-react";
 import { useIslandStore } from "../../stores/island-store";
 import { useSettingsStore } from "../../stores/settings-store";
 import { openSettingsWindow } from "../../lib/tauri-commands";
 import type { IslandMode } from "../../types";
 import { useTranslation } from "../../hooks/useTranslation";
+import { TrayWidget } from "../widgets/TrayWidget";
 
 interface IslandLayoutProps {
   mode: IslandMode;
 }
 
 export function IslandLayout({ mode }: IslandLayoutProps) {
-  const { mediaInfo, systemStats, weatherInfo } = useIslandStore();
+  const {
+    mediaInfo,
+    systemStats,
+    weatherInfo,
+    activeTab,
+    setActiveTab,
+    isDragging
+  } = useIslandStore();
   const settings = useSettingsStore();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"home" | "system" | "weather">(
-    "home",
-  );
   const willChange = useWillChange();
 
   // Determine active tabs based on widget visibility settings
   const hasHomeTab = settings.showMusic || settings.showCalendar;
   const hasSystemTab = settings.showSystem;
   const hasWeatherTab = settings.showWeather;
+  const hasTrayTab = settings.showTray;
 
   // Enforce correct tab focus fallback when widget visibility changes in settings
   useEffect(() => {
     if (activeTab === "home" && !hasHomeTab) {
       if (hasSystemTab) setActiveTab("system");
       else if (hasWeatherTab) setActiveTab("weather");
+      else if (hasTrayTab) setActiveTab("tray");
     } else if (activeTab === "system" && !hasSystemTab) {
       if (hasHomeTab) setActiveTab("home");
       else if (hasWeatherTab) setActiveTab("weather");
+      else if (hasTrayTab) setActiveTab("tray");
     } else if (activeTab === "weather" && !hasWeatherTab) {
       if (hasHomeTab) setActiveTab("home");
       else if (hasSystemTab) setActiveTab("system");
+      else if (hasTrayTab) setActiveTab("tray");
+    } else if (activeTab === "tray" && !hasTrayTab) {
+      if (hasHomeTab) setActiveTab("home");
+      else if (hasSystemTab) setActiveTab("system");
+      else if (hasWeatherTab) setActiveTab("weather");
     }
-  }, [activeTab, hasHomeTab, hasSystemTab, hasWeatherTab]);
+  }, [activeTab, hasHomeTab, hasSystemTab, hasWeatherTab, hasTrayTab, setActiveTab]);
 
   return (
     <div className="w-full h-full relative overflow-hidden">
@@ -148,7 +162,30 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                       />
                     )}
                     <Home className="w-3.5 h-3.5" />
-                    <span>{t("layHome")}</span>
+                    {/* <span>{t("layHome")}</span> */}
+                  </button>
+                )}
+                {hasTrayTab && (
+                  <button
+                    onClick={() => setActiveTab("tray")}
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${activeTab === "tray"
+                      ? "text-white font-bold"
+                      : "text-white/40 hover:text-white/60"
+                      }`}
+                  >
+                    {activeTab === "tray" && (
+                      <motion.div
+                        layoutId="activeHeaderTabIndicator"
+                        className="absolute inset-0 bg-white/[0.08] rounded-full -z-10 shadow-[inset_0_1px_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.15)]"
+                        transition={{
+                          type: "spring",
+                          stiffness: 350,
+                          damping: 28,
+                        }}
+                      />
+                    )}
+                    <Folder className="w-3.5 h-3.5" />
+                    {/* <span>{t("layTray")}</span> */}
                   </button>
                 )}
                 {hasSystemTab && (
@@ -171,7 +208,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                       />
                     )}
                     <Cpu className="w-3.5 h-3.5" />
-                    <span>{t("laySystem")}</span>
+                    {/* <span>{t("laySystem")}</span> */}
                   </button>
                 )}
                 {hasWeatherTab && (
@@ -194,7 +231,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                       />
                     )}
                     <Cloud className="w-3.5 h-3.5" />
-                    <span>{t("layWeather")}</span>
+                    {/* <span>{t("layWeather")}</span> */}
                   </button>
                 )}
               </div>
@@ -333,9 +370,50 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                     </div>
                   </motion.div>
                 )}
+
+                {activeTab === "tray" && hasTrayTab && (
+                  <motion.div
+                    key="tray"
+                    initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
+                    transition={{ duration: 0.14, ease: "easeInOut" }}
+                    className="flex flex-col flex-1 min-h-0 py-1 h-full"
+                  >
+                    <TrayWidget />
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           </div>
+
+          {/* Drag & Drop Window Overlay */}
+          <AnimatePresence>
+            {isDragging && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.12 }}
+                className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md rounded-2xl border border-white/10"
+              >
+                <motion.div
+                  initial={{ scale: 0.95, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.95, y: 10 }}
+                  transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                  className="flex flex-col items-center gap-3 text-center p-6"
+                >
+                  <div className="w-14 h-14 rounded-full bg-white/[0.08] flex items-center justify-center shadow-lg border border-white/10 animate-bounce">
+                    <Folder className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-white/90">
+                    {t("trayDropOverlay")}
+                  </span>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </div>
