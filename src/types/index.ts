@@ -9,6 +9,13 @@ export interface MediaInfo {
   app_name: string | null;
 }
 
+export interface DiskStats {
+  name: string;
+  total: number;
+  used: number;
+  percent: number;
+}
+
 export interface SystemStats {
   cpu_name: string;
   cpu_usage: number;
@@ -17,10 +24,7 @@ export interface SystemStats {
   memory_percent: number;
   gpu_name: string;
   gpu_usage: number;
-  disk_name: string;
-  disk_total: number;
-  disk_used: number;
-  disk_percent: number;
+  disks: DiskStats[];
 }
 
 export interface WeatherInfo {

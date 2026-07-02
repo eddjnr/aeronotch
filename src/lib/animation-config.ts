@@ -30,8 +30,11 @@ export const EASE = {
 /** Fixed border-radius: top edges are 0 (flush with screen top), bottom edges rounded */
 export const BORDER_RADIUS = "0px 0px 16px 16px";
 
+/** Height of the expanded Dynamic Island widget (in pixels) */
+export const EXPANDED_HEIGHT = 204;
+
 export const ISLAND_DIMENSIONS = {
   compact: { width: 250, height: 36 },
   preview: { width: 420, height: 52 },
-  expanded: { width: 660, height: 184 },
+  expanded: { width: 660, height: EXPANDED_HEIGHT },
 } as const;

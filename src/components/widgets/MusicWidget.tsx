@@ -1,11 +1,19 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SkipBack, Play, Pause, SkipForward, Music, Shuffle, Star } from 'lucide-react';
-import { SPRING } from '../../lib/animation-config';
-import { mediaControl, mediaSeek } from '../../lib/tauri-commands';
-import { ProgressBar } from './ProgressBar';
-import { Equalizer } from '../island/Equalizer';
-import type { MediaInfo, IslandMode } from '../../types';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  SkipBack,
+  Play,
+  Pause,
+  SkipForward,
+  Music,
+  Shuffle,
+  Star,
+} from "lucide-react";
+import { SPRING } from "../../lib/animation-config";
+import { mediaControl, mediaSeek } from "../../lib/tauri-commands";
+import { ProgressBar } from "./ProgressBar";
+import { Equalizer } from "../island/Equalizer";
+import type { MediaInfo, IslandMode } from "../../types";
 
 interface MusicWidgetProps {
   media: MediaInfo | null;
@@ -13,7 +21,9 @@ interface MusicWidgetProps {
 }
 
 export function MusicWidget({ media, mode }: MusicWidgetProps) {
-  const [localIsPlaying, setLocalIsPlaying] = useState(media?.is_playing ?? false);
+  const [localIsPlaying, setLocalIsPlaying] = useState(
+    media?.is_playing ?? false,
+  );
 
   useEffect(() => {
     if (media) {
@@ -22,7 +32,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
   }, [media?.is_playing]);
 
   if (!media) {
-    if (mode === 'expanded') {
+    if (mode === "expanded") {
       return (
         <div className="flex items-center justify-center h-full text-white/30 text-sm">
           No music playing
@@ -32,11 +42,11 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
     return null;
   }
 
-  if (mode === 'compact') {
+  if (mode === "compact") {
     return null; // Equalizer is shown separately in compact
   }
 
-  if (mode === 'preview') {
+  if (mode === "preview") {
     return (
       <div className="flex items-center gap-2.5">
         {media.thumbnail_url && (
@@ -86,13 +96,15 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
           <h3 className="text-xs font-semibold text-white truncate leading-tight select-none">
             {media.title}
           </h3>
-          <p className="text-[10px] text-white/50 truncate mt-0.5 select-none">{media.artist}</p>
+          <p className="text-[10px] text-white/50 truncate mt-0.5 select-none">
+            {media.artist}
+          </p>
         </div>
 
         {/* Mini Real-time Equalizer */}
         {localIsPlaying && (
           <div className="flex-shrink-0 pr-1 select-none">
-            <Equalizer isPlaying={true} barCount={6} />
+            <Equalizer isPlaying={true} barCount={4} />
           </div>
         )}
       </div>
@@ -120,7 +132,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
 
         <button
           type="button"
-          onClick={() => mediaControl('Previous')}
+          onClick={() => mediaControl("Previous")}
           className="text-white/60 hover:text-white transition-colors cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
         >
           <SkipBack className="w-4 h-4" fill="currentColor" />
@@ -131,23 +143,31 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
           onClick={() => {
             const nextState = !localIsPlaying;
             setLocalIsPlaying(nextState);
-            mediaControl('PlayPause').catch((err) => {
+            mediaControl("PlayPause").catch((err) => {
               console.error(err);
               setLocalIsPlaying(!nextState);
             });
           }}
           whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.90 }}
+          whileTap={{ scale: 0.9 }}
           transition={SPRING.button}
           className="text-white cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 flex items-center justify-center w-8 h-8"
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={localIsPlaying ? 'pause' : 'play'}
-              initial={{ opacity: 0, scale: 0.6, rotate: localIsPlaying ? -30 : 30 }}
+              key={localIsPlaying ? "pause" : "play"}
+              initial={{
+                opacity: 0,
+                scale: 0.6,
+                rotate: localIsPlaying ? -30 : 30,
+              }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.6, rotate: localIsPlaying ? 30 : -30 }}
-              transition={{ duration: 0.12, ease: 'easeOut' }}
+              exit={{
+                opacity: 0,
+                scale: 0.6,
+                rotate: localIsPlaying ? 30 : -30,
+              }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
               className="flex items-center justify-center"
             >
               {localIsPlaying ? (
@@ -161,7 +181,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
 
         <button
           type="button"
-          onClick={() => mediaControl('Next')}
+          onClick={() => mediaControl("Next")}
           className="text-white/60 hover:text-white transition-colors cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
         >
           <SkipForward className="w-4 h-4" fill="currentColor" />

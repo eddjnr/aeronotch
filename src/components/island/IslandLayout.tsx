@@ -98,42 +98,66 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
           <div className="flex flex-col h-full">
             {/* Header Bar with Tab Navigation */}
             <div className="flex justify-between items-center w-full mb-3 px-1">
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-1 relative">
                 {hasHomeTab && (
                   <button
                     onClick={() => setActiveTab('home')}
-                    className={`cursor-pointer transition-colors p-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 ${
-                      activeTab === 'home' ? 'text-white' : 'text-white/35 hover:text-white'
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
+                      activeTab === 'home' ? 'text-white font-bold' : 'text-white/40 hover:text-white/60'
                     }`}
                   >
+                    {activeTab === 'home' && (
+                      <motion.div
+                        layoutId="activeHeaderTabIndicator"
+                        className="absolute inset-0 bg-white/[0.08] rounded-full -z-10 shadow-[inset_0_1px_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.15)]"
+                        transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                      />
+                    )}
                     <Home className="w-3.5 h-3.5" />
+                    <span>Início</span>
                   </button>
                 )}
                 {hasSystemTab && (
                   <button
                     onClick={() => setActiveTab('system')}
-                    className={`cursor-pointer transition-colors p-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 ${
-                      activeTab === 'system' ? 'text-white' : 'text-white/35 hover:text-white'
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
+                      activeTab === 'system' ? 'text-white font-bold' : 'text-white/40 hover:text-white/60'
                     }`}
                   >
+                    {activeTab === 'system' && (
+                      <motion.div
+                        layoutId="activeHeaderTabIndicator"
+                        className="absolute inset-0 bg-white/[0.08] rounded-full -z-10 shadow-[inset_0_1px_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.15)]"
+                        transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                      />
+                    )}
                     <Cpu className="w-3.5 h-3.5" />
+                    <span>Sistema</span>
                   </button>
                 )}
                 {hasWeatherTab && (
                   <button
                     onClick={() => setActiveTab('weather')}
-                    className={`cursor-pointer transition-colors p-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 ${
-                      activeTab === 'weather' ? 'text-white' : 'text-white/35 hover:text-white'
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
+                      activeTab === 'weather' ? 'text-white font-bold' : 'text-white/45 hover:text-white/60'
                     }`}
                   >
+                    {activeTab === 'weather' && (
+                      <motion.div
+                        layoutId="activeHeaderTabIndicator"
+                        className="absolute inset-0 bg-white/[0.08] rounded-full -z-10 shadow-[inset_0_1px_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.15)]"
+                        transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                      />
+                    )}
                     <Cloud className="w-3.5 h-3.5" />
+                    <span>Clima</span>
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-white/50">
+              <div className="flex items-center text-white/50 pr-1">
                 <button
                   onClick={() => openSettingsWindow()}
-                  className="hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
+                  className="hover:text-white transition-colors cursor-pointer focus:outline-none p-1.5 rounded-full hover:bg-white/[0.04]"
                 >
                   <Settings className="w-3.5 h-3.5" />
                 </button>
