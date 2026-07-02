@@ -34,6 +34,19 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
+      - name: Bump version and push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          NEW_VERSION=$(node scripts/bump-version.js)
+          echo "New version: $NEW_VERSION"
+          
+          git add package.json src-tauri/tauri.conf.json
+          git commit -m "chore: bump version to v$NEW_VERSION [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
+        shell: bash
+
       - name: Build and Publish Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
