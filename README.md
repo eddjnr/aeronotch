@@ -30,8 +30,9 @@ AeroNotch brings the premium, organic feel of the iOS Dynamic Island straight to
 ---
 
 <p align="center">
-  <img width="1280" height="430" alt="demo aeronotch" src="https://github.com/user-attachments/assets/4dfa550d-1064-49d8-934f-440d379b2f14" />
+  <img width="1280" height="500" alt="demo aeronotch" src="https://github.com/user-attachments/assets/edac295d-0b21-40e3-a6a9-5d7851143dd3" />
 </p>
+
 
 ## 🎨 Preview & Aesthetics
 
