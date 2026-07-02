@@ -27,8 +27,10 @@ if (parts.length !== 3) {
   process.exit(1);
 }
 
-parts[2] = String(parseInt(parts[2], 10) + 1);
-const newVersion = parts.join('.');
+const newVersion = process.argv[2] || (() => {
+  parts[2] = String(parseInt(parts[2], 10) + 1);
+  return parts.join('.');
+})();
 
 function replaceInFile(filePath, searchValue, replaceValue) {
   if (!fs.existsSync(filePath)) {

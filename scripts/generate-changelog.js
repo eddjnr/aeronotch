@@ -19,13 +19,9 @@ function exec(cmd) {
 
 function getPreviousTag() {
   try {
-    return exec('git describe --tags --abbrev=0 HEAD~1 2>nul');
+    return exec('git describe --tags --abbrev=0 2>nul');
   } catch {
-    try {
-      return exec('git describe --tags --abbrev=0 2>nul');
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 
@@ -54,18 +50,22 @@ function parseCommit(subject) {
 
 function buildChangelog(commits, newVersion) {
   const grouped = {};
+  const knownTypes = new Set();
   for (const { types } of CATEGORIES) {
     for (const type of types) {
       grouped[type] = [];
+      knownTypes.add(type);
     }
   }
 
+  const unknown = [];
+
   for (const commit of commits) {
     const parsed = parseCommit(commit.subject);
-    if (!grouped[parsed.type]) {
-      grouped.other.push(commit);
-    } else {
+    if (knownTypes.has(parsed.type)) {
       grouped[parsed.type].push({ ...commit, ...parsed });
+    } else {
+      unknown.push(commit);
     }
   }
 
@@ -83,10 +83,9 @@ function buildChangelog(commits, newVersion) {
     lines.push('');
   }
 
-  // Uncategorized
-  if (grouped.other && grouped.other.length > 0) {
+  if (unknown.length > 0) {
     lines.push(`### 📦 Other`);
-    for (const entry of grouped.other) {
+    for (const entry of unknown) {
       lines.push(`- ${entry.description || entry.subject} (\`${entry.hash}\`)`);
     }
     lines.push('');
