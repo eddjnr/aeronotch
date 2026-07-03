@@ -16,6 +16,8 @@ interface IslandState {
 
   weatherInfo: WeatherInfo | null;
   setWeatherInfo: (info: WeatherInfo | null) => void;
+  weatherError: string | null;
+  setWeatherError: (error: string | null) => void;
 
   settingsOpen: boolean;
   toggleSettings: () => void;
@@ -44,7 +46,9 @@ export const useIslandStore = create<IslandState>((set) => ({
   setSystemStats: (systemStats) => set({ systemStats }),
 
   weatherInfo: null,
-  setWeatherInfo: (weatherInfo) => set({ weatherInfo }),
+  setWeatherInfo: (weatherInfo) => set({ weatherInfo, weatherError: null }),
+  weatherError: null,
+  setWeatherError: (weatherError) => set({ weatherError }),
 
   settingsOpen: false,
   toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),

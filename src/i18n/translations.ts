@@ -179,6 +179,9 @@ export const translations = {
     trayClearSelection: "Deselect files",
     traySelectHint: "Click files to select multiple",
     trayClearAll: "Clear all",
+
+    // Weather Error
+    weatherUnstable: "Unstable service",
   },
   "pt-BR": {
     // Sidebar Tabs
@@ -360,5 +363,8 @@ export const translations = {
     trayClearSelection: "Desmarcar arquivos",
     traySelectHint: "Clique nos arquivos para selecionar vários",
     trayClearAll: "Limpar tudo",
+
+    // Weather Error
+    weatherUnstable: "Serviço instável",
   },
 };

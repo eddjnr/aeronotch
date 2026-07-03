@@ -36,7 +36,7 @@ interface IslandLayoutProps {
 }
 
 export function IslandLayout({ mode }: IslandLayoutProps) {
-  const { mediaInfo, systemStats, weatherInfo, micStatus, activeTab, setActiveTab } =
+  const { mediaInfo, systemStats, weatherInfo, weatherError, micStatus, activeTab, setActiveTab } =
     useIslandStore();
   const settings = useSettingsStore();
   const trayFileCount = useTrayStore((state) => state.files.length);
@@ -170,7 +170,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                   <div className="flex items-center gap-2">
                     {settings.showWeather && (
                       <ErrorBoundary>
-                        <WeatherWidget weather={weatherInfo} mode="compact" />
+                        <WeatherWidget weather={weatherInfo} mode="compact" error={weatherError} />
                       </ErrorBoundary>
                     )}
                     {settings.showSystem && (
@@ -450,6 +450,10 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                               </span>
                             </div>
                           </>
+                        ) : weatherError ? (
+                          <div className="text-white/30 text-xs text-center">
+                            {t("weatherUnstable")}
+                          </div>
                         ) : (
                           <div className="text-white/30 text-xs">
                             {t("layLoadingWeather")}
@@ -497,7 +501,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                           </div>
                         ) : (
                           <div className="text-white/30 text-xs text-center flex-1 flex items-center justify-center">
-                            --
+                            {weatherError ? t("weatherUnstable") : "--"}
                           </div>
                         )}
                       </div>

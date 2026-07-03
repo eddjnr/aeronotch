@@ -4,6 +4,7 @@ import { useIslandStore } from '../stores/island-store';
 
 export function useWeatherInfo() {
   const setWeatherInfo = useIslandStore((s) => s.setWeatherInfo);
+  const setWeatherError = useIslandStore((s) => s.setWeatherError);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -13,6 +14,7 @@ export function useWeatherInfo() {
         setWeatherInfo(info);
       } catch (err) {
         console.error('[Weather] Failed to fetch weather:', err);
+        setWeatherError(String(err));
       }
     };
 
@@ -23,5 +25,5 @@ export function useWeatherInfo() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [setWeatherInfo]);
+  }, [setWeatherInfo, setWeatherError]);
 }
