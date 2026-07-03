@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import {
   File,
   Folder,
@@ -13,6 +14,7 @@ import {
   Trash2,
   Upload,
   MoreVertical,
+  Check,
 } from "lucide-react";
 import { useTrayStore, TrayFile } from "../../stores/tray-store";
 import { useIslandStore } from "../../stores/island-store";
@@ -29,16 +31,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
-
-// Helper to format bytes
-function formatBytes(bytes: number, decimals = 1) {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
-}
 
 // Helper to get extension-specific icons
 function getFileIcon(extension: string, isDir: boolean) {
@@ -90,10 +82,72 @@ function getFileIcon(extension: string, isDir: boolean) {
   return <File className="w-8 h-8 text-neutral-400 fill-neutral-400/10" />;
 }
 
+// Helper to check if file is an image
+function isImage(extension: string) {
+  const ext = extension.toLowerCase();
+  return ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"].includes(ext);
+}
+
+// Component to render image preview
+function ImagePreview({ path, name }: { path: string; name: string }) {
+  const [error, setError] = useState(false);
+  const [src, setSrc] = useState("");
+
+  useEffect(() => {
+    try {
+      setSrc(convertFileSrc(path));
+    } catch (e) {
+      setError(true);
+    }
+  }, [path]);
+
+  if (error || !src) {
+    return <ImageIcon className="w-8 h-8 text-sky-400 fill-sky-400/10" />;
+  }
+
+  return (
+    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/5 shadow-sm border border-white/5 flex items-center justify-center">
+      <img
+        src={src}
+        alt={name}
+        onError={() => setError(true)}
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
+}
+
 export function TrayWidget() {
-  const { files, removeFile } = useTrayStore();
+  const { files, removeFile, clearTray } = useTrayStore();
   const { t } = useTranslation();
   const setIsDropdownOpen = useIslandStore((s) => s.setIsDropdownOpen);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const handleToggleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if ((e.target as HTMLElement).closest("button")) {
+      return;
+    }
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const handleCopySelected = async () => {
+    const selectedFiles = files.filter((f) => selectedIds.includes(f.id));
+    if (selectedFiles.length === 0) return;
+    try {
+      await copyFilesToClipboard(selectedFiles.map((f) => f.path));
+      setSelectedIds([]);
+    } catch (err) {
+      console.error("Failed to copy selected files:", err);
+    }
+  };
+
+  const handleRemoveSelected = () => {
+    selectedIds.forEach((id) => removeFile(id));
+    setSelectedIds([]);
+  };
 
   // Reset dropdown open state on unmount
   useEffect(() => {
@@ -141,25 +195,83 @@ export function TrayWidget() {
       ) : (
         // File list state
         <div className="flex flex-col h-full justify-between">
-          {/* <div className="flex items-center justify-between mb-1.5 px-1">
-            <button
-              onClick={clearTray}
-              className="text-[9px] font-medium text-rose-400/70 hover:text-rose-400 transition-colors cursor-pointer bg-white/[0.02] hover:bg-rose-500/10 px-2 py-0.5 rounded-full"
-            >
-              Limpar
-            </button>
-          </div> */}
+          {/* Header Action Bar */}
+          <div className="flex items-center justify-between mb-1.5 px-1 min-h-[22px] w-full">
+            {selectedIds.length > 0 ? (
+              <div className="flex items-center gap-2 w-full justify-between animate-fade-in">
+                <span className="text-[9px] text-white/50 font-medium">
+                  {selectedIds.length} selecionado
+                  {selectedIds.length > 1 ? "s" : ""}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handleCopySelected}
+                    className="text-[9px] font-semibold text-sky-400 hover:text-sky-300 transition-colors cursor-pointer bg-sky-500/10 hover:bg-sky-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-sky-500/20 animate-scale-in"
+                  >
+                    <Copy className="w-2.5 h-2.5" />
+                    Copiar
+                  </button>
+                  <button
+                    onClick={handleRemoveSelected}
+                    className="text-[9px] font-semibold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-rose-500/20 animate-scale-in"
+                  >
+                    <Trash2 className="w-2.5 h-2.5" />
+                    Remover
+                  </button>
+                  <button
+                    onClick={() => setSelectedIds([])}
+                    className="text-[9px] font-medium text-white/50 hover:text-white/80 transition-colors cursor-pointer bg-white/[0.04] hover:bg-white/[0.08] px-2 py-0.5 rounded-full"
+                  >
+                    Desmarcar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[9px] text-white/30 font-medium">
+                  Clique nos arquivos para selecionar vários
+                </span>
+                <button
+                  onClick={clearTray}
+                  className="text-[9px] font-medium text-rose-400/60 hover:text-rose-400 transition-colors cursor-pointer bg-white/[0.02] hover:bg-rose-500/10 px-2.5 py-0.5 rounded-full"
+                >
+                  Limpar tudo
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="flex-1 overflow-x-auto overflow-y-hidden flex items-center gap-2.5 pr-2 py-1 scrollbar-none">
             {files.map((file) => (
               <div
                 key={file.id}
                 onDoubleClick={() => handleOpen(file)}
-                className="relative flex-shrink-0 w-[100px] h-[95px] rounded-xl border border-white/[0.04] hover:border-white/10 flex flex-col items-center justify-between p-2.5 bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-200 cursor-pointer group"
+                onClick={(e) => handleToggleSelect(file.id, e)}
+                className={`relative flex-shrink-0 w-[100px] h-[95px] rounded-xl border flex flex-col items-center justify-between p-2.5 transition-all duration-200 cursor-pointer group ${
+                  selectedIds.includes(file.id)
+                    ? "border-sky-500 bg-sky-500/10 shadow-[0_0_12px_rgba(14,165,233,0.15)]"
+                    : "border-white/[0.04] hover:border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                }`}
               >
-                {/* File Icon */}
-                <div className="flex-1 flex items-center justify-center pointer-events-none">
-                  {getFileIcon(file.extension, file.isDir)}
+                {/* Selection Checkbox/Indicator */}
+                <div
+                  className={`absolute top-1.5 left-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center border transition-all duration-200 z-10 ${
+                    selectedIds.includes(file.id)
+                      ? "bg-sky-500 border-sky-400 text-white"
+                      : "bg-black/20 border-white/10 opacity-0 group-hover:opacity-100"
+                  }`}
+                >
+                  {selectedIds.includes(file.id) && (
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  )}
+                </div>
+                {/* File Icon / Preview */}
+                <div className="flex-1 flex items-center justify-center pointer-events-none w-full h-[50px] overflow-hidden my-0.5">
+                  {isImage(file.extension) ? (
+                    <ImagePreview path={file.path} name={file.name} />
+                  ) : (
+                    getFileIcon(file.extension, file.isDir)
+                  )}
                 </div>
 
                 {/* File Name */}
@@ -167,9 +279,6 @@ export function TrayWidget() {
                   <div className="flex flex-col items-center pointer-events-none">
                     <span className="text-[10px] font-medium text-white/90 truncate w-full px-0.5 leading-tight">
                       {file.name}
-                    </span>
-                    <span className="text-[8px] text-white/40 mt-0.5 font-mono">
-                      {formatBytes(file.size)}
                     </span>
                   </div>
                 </div>
