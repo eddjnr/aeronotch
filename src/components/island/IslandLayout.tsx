@@ -355,13 +355,15 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                     <MicWidget micStatus={micStatus} variant="header" />
                   </ErrorBoundary>
                 )}
-                <button
+                <motion.button
                   type="button"
                   onClick={() => openSettingsWindow()}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", duration: 0.15, bounce: 0 }}
                   className="hover:text-white transition-colors cursor-pointer focus:outline-none p-1.5 rounded-full hover:bg-white/[0.04]"
                 >
                   <Settings className="w-3.5 h-3.5" />
-                </button>
+                </motion.button>
               </div>
             </div>
 
