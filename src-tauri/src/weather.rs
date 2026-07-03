@@ -23,11 +23,17 @@ struct OpenMeteoResponse {
 
 #[derive(Debug, Deserialize)]
 struct OpenMeteoCurrent {
+    #[serde(default)]
     temperature_2m: f64,
+    #[serde(default)]
     apparent_temperature: f64,
+    #[serde(default)]
     weather_code: u32,
+    #[serde(default)]
     relative_humidity_2m: f64,
+    #[serde(default)]
     wind_speed_10m: f64,
+    #[serde(default)]
     is_day: u8,
 }
 
@@ -38,16 +44,27 @@ pub struct WeatherClient {
     latitude: Mutex<f64>,
     longitude: Mutex<f64>,
     is_localized: Mutex<bool>,
+    client: reqwest::Client,
 }
 
 impl WeatherClient {
     pub fn new() -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .connect_timeout(Duration::from_secs(5))
+            .build()
+            .unwrap_or_else(|e| {
+                log::error!("[Weather] Failed to create reqwest::Client: {}", e);
+                reqwest::Client::new()
+            });
+
         Self {
             cache: Mutex::new(None),
             // Default: São Paulo, Brazil — user can change in settings
             latitude: Mutex::new(-23.5505),
             longitude: Mutex::new(-46.6333),
             is_localized: Mutex::new(false),
+            client,
         }
     }
 
@@ -74,19 +91,28 @@ impl WeatherClient {
         }
 
         // Try ip-api.com first
-        if let Ok(res) = reqwest::get("http://ip-api.com/json").await {
-            if let Ok(data) = res.json::<IpApiResponse>().await {
-                return Ok((data.lat, data.lon));
+        match self.client.get("http://ip-api.com/json").send().await {
+            Ok(res) => {
+                if let Ok(data) = res.json::<IpApiResponse>().await {
+                    log::info!("[Weather] Location auto-detected via ip-api.com: {}, {}", data.lat, data.lon);
+                    return Ok((data.lat, data.lon));
+                }
             }
+            Err(e) => log::warn!("[Weather] ip-api.com failed: {}", e),
         }
 
         // Try freeipapi.com as fallback
-        if let Ok(res) = reqwest::get("https://freeipapi.com/api/json").await {
-            if let Ok(data) = res.json::<FreeIpApiResponse>().await {
-                return Ok((data.latitude, data.longitude));
+        match self.client.get("https://freeipapi.com/api/json").send().await {
+            Ok(res) => {
+                if let Ok(data) = res.json::<FreeIpApiResponse>().await {
+                    log::info!("[Weather] Location auto-detected via freeipapi.com: {}, {}", data.latitude, data.longitude);
+                    return Ok((data.latitude, data.longitude));
+                }
             }
+            Err(e) => log::warn!("[Weather] freeipapi.com failed: {}", e),
         }
 
+        log::warn!("[Weather] All location auto-detection services failed");
         Err("Failed to auto-detect location".to_string())
     }
 
@@ -121,16 +147,39 @@ impl WeatherClient {
             lat, lon
         );
 
-        let response = reqwest::get(&url)
+        let response = self
+            .client
+            .get(&url)
+            .send()
             .await
-            .map_err(|e| format!("Failed to fetch weather: {}", e))?;
+            .map_err(|e| {
+                let msg = format!("[Weather] Failed to fetch weather: {}", e);
+                log::error!("{}", msg);
+                msg
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            let msg = format!("[Weather] API returned {}: {}", status, body);
+            log::error!("{}", msg);
+            return Err(msg);
+        }
 
         let data: OpenMeteoResponse = response
             .json()
             .await
-            .map_err(|e| format!("Failed to parse weather response: {}", e))?;
+            .map_err(|e| {
+                let msg = format!("[Weather] Failed to parse response: {}", e);
+                log::error!("{}", msg);
+                msg
+            })?;
 
-        let current = data.current.ok_or("No current weather data")?;
+        let current = data.current.ok_or_else(|| {
+            let msg = "[Weather] No current weather data in API response".to_string();
+            log::error!("{}", msg);
+            msg
+        })?;
 
         let weather = WeatherInfo {
             temperature: current.temperature_2m,
@@ -141,6 +190,11 @@ impl WeatherClient {
             wind_speed: current.wind_speed_10m,
             is_day: current.is_day == 1,
         };
+
+        log::info!(
+            "[Weather] Fetched: {}°C, {}",
+            weather.temperature, weather.weather_description
+        );
 
         // Update cache
         *self.cache.lock().unwrap() = Some((weather.clone(), Instant::now()));

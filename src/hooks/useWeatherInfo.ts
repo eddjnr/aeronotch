@@ -11,8 +11,8 @@ export function useWeatherInfo() {
       try {
         const info = await getWeather();
         setWeatherInfo(info);
-      } catch {
-        // Weather API might fail — don't crash
+      } catch (err) {
+        console.error('[Weather] Failed to fetch weather:', err);
       }
     };
 
