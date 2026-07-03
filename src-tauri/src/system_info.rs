@@ -1,6 +1,8 @@
 use serde::Serialize;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use sysinfo::System;
+
+use crate::wmi_metrics::CachedWmiStats;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct DiskStats {
@@ -55,24 +57,13 @@ fn run_command(cmd: &str, args: &[&str]) -> Option<String> {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum CpuTempMethod {
-    Unknown,
-    Sysinfo,
-    LibreHardwareMonitor,
-    OpenHardwareMonitor,
-    Acpi,
-    None,
-}
-
 /// Thread-safe wrapper around `sysinfo::System`.
 pub struct SystemMonitor {
     system: Mutex<System>,
     cpu_name: String,
     gpu_name: Mutex<String>,
     gpu_backend: Mutex<GpuBackend>,
-    cpu_temp_method: Mutex<CpuTempMethod>,
-    last_temp_detection: Mutex<std::time::Instant>,
+    wmi_stats: Option<Arc<Mutex<CachedWmiStats>>>,
     #[cfg(target_os = "windows")]
     last_global_cpu_times: Mutex<Option<(u64, u64)>>,
 }
@@ -117,7 +108,7 @@ fn get_win32_global_cpu_times() -> Option<(u64, u64)> {
 }
 
 impl SystemMonitor {
-    pub fn new() -> Self {
+    pub fn new(wmi_stats: Option<Arc<Mutex<CachedWmiStats>>>) -> Self {
         let mut sys = System::new_all();
         sys.refresh_all();
 
@@ -128,8 +119,6 @@ impl SystemMonitor {
 
         let gpu_name = Mutex::new("Graphics Card".to_string());
         let gpu_backend = Mutex::new(GpuBackend::None);
-        let cpu_temp_method = Mutex::new(CpuTempMethod::Unknown);
-        let last_temp_detection = Mutex::new(std::time::Instant::now());
 
         #[cfg(target_os = "windows")]
         let last_global_cpu_times = Mutex::new(get_win32_global_cpu_times());
@@ -139,8 +128,7 @@ impl SystemMonitor {
             cpu_name,
             gpu_name,
             gpu_backend,
-            cpu_temp_method,
-            last_temp_detection,
+            wmi_stats,
             #[cfg(target_os = "windows")]
             last_global_cpu_times,
         }
@@ -148,10 +136,23 @@ impl SystemMonitor {
 
     #[cfg(target_os = "windows")]
     pub fn detect_gpu_name(&self) {
-        let gpu = run_command("powershell", &[
-            "-Command",
-            "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name | Select-Object -First 1"
-        ]).unwrap_or_else(|| "Graphics Card".to_string());
+        // Prefer WMI cache (populated by worker thread), fall back to PowerShell
+        let gpu = self.wmi_stats.as_ref()
+            .and_then(|s| s.lock().ok())
+            .and_then(|s| {
+                if s.gpu_name_ready && !s.gpu_name.is_empty() {
+                    Some(s.gpu_name.clone())
+                } else {
+                    None
+                }
+            })
+            .or_else(|| {
+                run_command("powershell", &[
+                    "-Command",
+                    "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name | Select-Object -First 1"
+                ])
+            })
+            .unwrap_or_else(|| "Graphics Card".to_string());
 
         if let Ok(mut name) = self.gpu_name.lock() {
             *name = gpu;
@@ -267,132 +268,36 @@ impl SystemMonitor {
             sys.global_cpu_usage()
         };
 
-        // Query CPU and GPU temperatures using sysinfo::Components
+        // Read a snapshot from the WMI cache (no PowerShell involved)
+        let wmi_snapshot = self.wmi_stats.as_ref()
+            .and_then(|s| s.lock().ok())
+            .map(|s| s.clone());
+
+        // Query CPU and GPU temperatures using sysinfo::Components, fall back to WMI cache
         use sysinfo::Components;
         let components = Components::new_with_refreshed_list();
-        
-        let mut cpu_temp = components.iter()
+
+        let cpu_temp = components.iter()
             .find(|c| {
                 let label = c.label().to_lowercase();
                 label.contains("cpu") || label.contains("core") || label.contains("package") || label.contains("soc")
             })
             .and_then(|c| c.temperature())
+            .or_else(|| components.iter().find_map(|c| c.temperature()))
             .or_else(|| {
-                components.iter().find_map(|c| c.temperature())
+                wmi_snapshot.as_ref().and_then(|w| w.cpu_temp_celsius)
             });
-
-        if cpu_temp.is_some() {
-            if let Ok(mut method) = self.cpu_temp_method.lock() {
-                *method = CpuTempMethod::Sysinfo;
-            }
-        }
-
-        #[cfg(target_os = "windows")]
-        if cpu_temp.is_none() {
-            let mut method_lock = self.cpu_temp_method.lock().unwrap();
-            let mut last_det_lock = self.last_temp_detection.lock().unwrap();
-            let now = std::time::Instant::now();
-            
-            let should_detect = match *method_lock {
-                CpuTempMethod::Unknown => true,
-                CpuTempMethod::None => now.duration_since(*last_det_lock) > std::time::Duration::from_secs(30),
-                _ => false,
-            };
-            
-            if should_detect {
-                // Try LibreHardwareMonitor
-                let lhm_val = run_command("powershell", &[
-                    "-Command",
-                    "(Get-CimInstance -Namespace root/LibreHardwareMonitor -ClassName Sensor | Where-Object { $_.SensorType -eq 'Temperature' -and ($_.Name -like '*CPU Core*' -or $_.Name -like '*CPU Package*') } | Select-Object -ExpandProperty Value -First 1)"
-                ])
-                .and_then(|out| out.replace(',', ".").parse::<f32>().ok());
-                
-                if lhm_val.is_some() {
-                    *method_lock = CpuTempMethod::LibreHardwareMonitor;
-                    cpu_temp = lhm_val;
-                } else {
-                    // Try OpenHardwareMonitor
-                    let ohm_val = run_command("powershell", &[
-                        "-Command",
-                        "(Get-CimInstance -Namespace root/OpenHardwareMonitor -ClassName Sensor | Where-Object { $_.SensorType -eq 'Temperature' -and ($_.Name -like '*CPU Core*' -or $_.Name -like '*CPU Package*') } | Select-Object -ExpandProperty Value -First 1)"
-                    ])
-                    .and_then(|out| out.replace(',', ".").parse::<f32>().ok());
-                    
-                    if ohm_val.is_some() {
-                        *method_lock = CpuTempMethod::OpenHardwareMonitor;
-                        cpu_temp = ohm_val;
-                    } else {
-                        // Try ACPI
-                        let acpi_val = run_command("powershell", &[
-                            "-Command",
-                            "(Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature).CurrentTemperature"
-                        ])
-                        .and_then(|out| out.replace(',', ".").parse::<f32>().ok())
-                        .map(|k_tenths| k_tenths / 10.0 - 273.15);
-                        
-                        if acpi_val.is_some() {
-                            *method_lock = CpuTempMethod::Acpi;
-                            cpu_temp = acpi_val;
-                        } else {
-                            *method_lock = CpuTempMethod::None;
-                            *last_det_lock = now;
-                        }
-                    }
-                }
-            } else {
-                match *method_lock {
-                    CpuTempMethod::LibreHardwareMonitor => {
-                        let val = run_command("powershell", &[
-                            "-Command",
-                            "(Get-CimInstance -Namespace root/LibreHardwareMonitor -ClassName Sensor | Where-Object { $_.SensorType -eq 'Temperature' -and ($_.Name -like '*CPU Core*' -or $_.Name -like '*CPU Package*') } | Select-Object -ExpandProperty Value -First 1)"
-                        ])
-                        .and_then(|out| out.replace(',', ".").parse::<f32>().ok());
-                        
-                        if val.is_some() {
-                            cpu_temp = val;
-                        } else {
-                            *method_lock = CpuTempMethod::None;
-                            *last_det_lock = now;
-                        }
-                    }
-                    CpuTempMethod::OpenHardwareMonitor => {
-                        let val = run_command("powershell", &[
-                            "-Command",
-                            "(Get-CimInstance -Namespace root/OpenHardwareMonitor -ClassName Sensor | Where-Object { $_.SensorType -eq 'Temperature' -and ($_.Name -like '*CPU Core*' -or $_.Name -like '*CPU Package*') } | Select-Object -ExpandProperty Value -First 1)"
-                        ])
-                        .and_then(|out| out.replace(',', ".").parse::<f32>().ok());
-                        
-                        if val.is_some() {
-                            cpu_temp = val;
-                        } else {
-                            *method_lock = CpuTempMethod::None;
-                            *last_det_lock = now;
-                        }
-                    }
-                    CpuTempMethod::Acpi => {
-                        let val = run_command("powershell", &[
-                            "-Command",
-                            "(Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature).CurrentTemperature"
-                        ])
-                        .and_then(|out| out.replace(',', ".").parse::<f32>().ok())
-                        .map(|k_tenths| k_tenths / 10.0 - 273.15);
-                        
-                        if val.is_some() {
-                            cpu_temp = val;
-                        } else {
-                            *method_lock = CpuTempMethod::None;
-                            *last_det_lock = now;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
 
         let gpu_temp = components.iter()
             .find(|c| c.label().to_lowercase().contains("gpu"))
             .and_then(|c| c.temperature())
             .or_else(|| self.query_gpu_temp_via_smi());
+
+        let gpu_name = wmi_snapshot.as_ref()
+            .and_then(|w| {
+                if !w.gpu_name.is_empty() { Some(w.gpu_name.clone()) } else { None }
+            })
+            .unwrap_or_else(|| self.gpu_name.lock().unwrap().clone());
 
         SystemStats {
             cpu_name: self.cpu_name.clone(),
@@ -400,7 +305,7 @@ impl SystemMonitor {
             total_memory,
             used_memory,
             memory_percent,
-            gpu_name: self.gpu_name.lock().unwrap().clone(),
+            gpu_name,
             gpu_usage,
             disks: disk_stats,
             cpu_temp,
@@ -410,6 +315,14 @@ impl SystemMonitor {
 
     /// Query GPU utilisation using the detected backend.
     fn query_gpu_usage(&self) -> f32 {
+        // For non-WMI backends, we may also want the WMI cache as fallback
+        let wmi_fallback = || -> f32 {
+            self.wmi_stats.as_ref()
+                .and_then(|s| s.lock().ok())
+                .map(|s| s.gpu_usage_pct)
+                .unwrap_or(0.0)
+        };
+
         match *self.gpu_backend.lock().unwrap() {
             GpuBackend::NvidiaSmi => {
                 run_command("nvidia-smi", &[
@@ -417,7 +330,7 @@ impl SystemMonitor {
                     "--format=csv,noheader,nounits"
                 ])
                 .and_then(|s| s.replace(',', ".").parse::<f32>().ok())
-                .unwrap_or(0.0)
+                .unwrap_or_else(wmi_fallback)
             }
             GpuBackend::AmdRocmSmi => {
                 run_command("rocm-smi", &["--showuse"])
@@ -430,7 +343,7 @@ impl SystemMonitor {
                             .collect();
                         nums.into_iter().reduce(f32::max)
                     })
-                    .unwrap_or_else(Self::query_gpu_usage_via_wmi)
+                    .unwrap_or_else(wmi_fallback)
             }
             GpuBackend::IntelXpuSmi => {
                 run_command("xpu-smi", &["dump", "-d", "0", "-g", "0", "-m", "utilization"])
@@ -443,26 +356,12 @@ impl SystemMonitor {
                             .collect();
                         nums.into_iter().reduce(f32::max)
                     })
-                    .unwrap_or_else(Self::query_gpu_usage_via_wmi)
+                    .unwrap_or_else(wmi_fallback)
             }
-            GpuBackend::WindowsWmi => Self::query_gpu_usage_via_wmi(),
+            GpuBackend::WindowsWmi => wmi_fallback(),
             GpuBackend::None => 0.0,
         }
     }
-
-    /// Universal fallback: query GPU utilisation via Windows WMI performance counters.
-    #[cfg(target_os = "windows")]
-    fn query_gpu_usage_via_wmi() -> f32 {
-        run_command("powershell", &[
-            "-Command",
-            "$v = Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction SilentlyContinue | Where-Object { $_.EngType -eq '3D' } | Select-Object -ExpandProperty PercentGPUTime; if ($v) { ($v | Measure-Object -Average).Average } else { 0 }"
-        ])
-        .and_then(|s| s.replace(',', ".").parse::<f32>().ok())
-        .unwrap_or(0.0)
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    fn query_gpu_usage_via_wmi() -> f32 { 0.0 }
 
     /// Query GPU temperature via the detected SMI backend as fallback.
     fn query_gpu_temp_via_smi(&self) -> Option<f32> {

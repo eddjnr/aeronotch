@@ -3,6 +3,7 @@ mod mic;
 mod system_info;
 mod weather;
 mod google_calendar;
+mod wmi_metrics;
 
 use media::{MediaAction, MediaInfo};
 use mic::MicStatus;
@@ -501,7 +502,8 @@ fn open_file_on_disk(path: String) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let system_monitor = Arc::new(SystemMonitor::new());
+    let wmi_stats = wmi_metrics::spawn_worker();
+    let system_monitor = Arc::new(SystemMonitor::new(Some(wmi_stats)));
     let weather_client = Arc::new(WeatherClient::new());
 
     tauri::Builder::default()
@@ -548,7 +550,6 @@ pub fn run() {
 
             // Show window after positioning
             let _ = window.show();
-
 
 
             // ── Tray Icon ──
