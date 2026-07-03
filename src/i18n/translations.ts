@@ -25,6 +25,7 @@ export const translations = {
     lblLaunchStartup: "Launch on Startup",
     lblResetDefaults: "Reset to Defaults",
     btnResetSettings: "Reset Settings",
+    btnBrowse: "Browse...",
 
     // Language Settings Group
     groupLanguage: "Language & Region",
@@ -43,6 +44,14 @@ export const translations = {
     lblWeatherWidget: "Weather Details",
     lblClockWidget: "Digital Clock",
     lblTrayWidget: "File Tray",
+
+    // Right Corner
+    lblRightCorner: "Right Corner (Compact)",
+    lblRightCornerDesc: "Choose what appears on the right side when the island is compact.",
+    rightCornerWidgets: "Widgets (Weather / System)",
+    rightCornerCustom: "Custom Image / GIF",
+    lblCustomUrl: "Image URL (GIF, PNG, etc.)",
+    phCustomUrl: "https://example.com/animation.gif",
 
     // Upcoming Extensions
     lblUpcomingExtensions: "Upcoming Extensions",
@@ -187,6 +196,7 @@ export const translations = {
     lblLaunchStartup: "Iniciar com o Windows",
     lblResetDefaults: "Restaurar Padrões",
     btnResetSettings: "Restaurar",
+    btnBrowse: "Procurar...",
 
     // Language Settings Group
     groupLanguage: "Idioma e Região",
@@ -205,6 +215,14 @@ export const translations = {
     lblWeatherWidget: "Detalhes do Clima",
     lblClockWidget: "Relógio Digital",
     lblTrayWidget: "Bandeja de Arquivos",
+
+    // Right Corner
+    lblRightCorner: "Canto Direito (Compacto)",
+    lblRightCornerDesc: "Escolha o que aparece no lado direito quando a ilha está compacta.",
+    rightCornerWidgets: "Widgets (Clima / Sistema)",
+    rightCornerCustom: "Imagem Personalizada / GIF",
+    lblCustomUrl: "URL da Imagem (GIF, PNG, etc.)",
+    phCustomUrl: "https://exemplo.com/animacao.gif",
 
     // Upcoming Extensions
     lblUpcomingExtensions: "Próximas Extensões",

@@ -213,7 +213,7 @@ export function TrayWidget() {
             />
           </div>
           <span
-            className={`text-[11px] font-medium transition-colors duration-200 ${
+            className={`text-sm transition-colors duration-200 ${
               isDragging ? "text-white/90" : "text-white/40"
             }`}
           >

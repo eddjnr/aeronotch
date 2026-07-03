@@ -87,9 +87,9 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
           animate={{ opacity: 1, filter: "blur(0px)" }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           style={{ willChange }}
-          className={`absolute inset-0 flex items-center justify-between whitespace-nowrap ${
-            shouldShowTrayCompactSummary ? "px-3" : "px-5"
-          }`}
+          className={
+            "absolute inset-0 flex items-center justify-between whitespace-nowrap px-3"
+          }
         >
           {shouldShowTrayCompactSummary ? (
             <>
@@ -116,14 +116,26 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 )}
                 {settings.showClock && <ClockWidget mode="compact" />}
               </div>
-              <div className="flex items-center gap-2">
-                {settings.showWeather && (
-                  <WeatherWidget weather={weatherInfo} mode="compact" />
-                )}
-                {settings.showSystem && (
-                  <SystemWidget stats={systemStats} mode="compact" />
-                )}
-              </div>
+              {settings.rightCornerMode === "custom" &&
+              settings.customRightCornerUrl ? (
+                <div className="flex items-center gap-2">
+                  <img
+                    src={settings.customRightCornerUrl}
+                    alt=""
+                    className="h-5 max-w-[60px] object-contain rounded-sm"
+                    draggable={false}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {settings.showWeather && (
+                    <WeatherWidget weather={weatherInfo} mode="compact" />
+                  )}
+                  {settings.showSystem && (
+                    <SystemWidget stats={systemStats} mode="compact" />
+                  )}
+                </div>
+              )}
             </>
           )}
         </motion.div>

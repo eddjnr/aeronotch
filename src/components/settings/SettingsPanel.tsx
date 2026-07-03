@@ -18,6 +18,8 @@ import {
   Folder,
 } from "lucide-react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { open } from "@tauri-apps/plugin-dialog";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { SpinningText } from "@/components/ui/spinnig-text";
 import {
@@ -206,6 +208,8 @@ export function SettingsPanel() {
       opacity: 0.92,
       language: "en",
       monitorPlacement: "primary",
+      rightCornerMode: "widgets",
+      customRightCornerUrl: "",
     };
     Object.entries(defaults).forEach(([key, value]) => {
       emit("settings-changed", { key, value }).catch(console.error);
@@ -643,6 +647,124 @@ export function SettingsPanel() {
                       onChange={() => handleToggleWidget("showTray")}
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* iOS-Style Settings Group (Right Corner) */}
+              <div className="flex flex-col">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#86868b] px-1 mb-2">
+                  {t("lblRightCorner")}
+                </span>
+                <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                  {/* Mode Selector */}
+                  <div className="flex flex-col gap-3 py-3.5 px-4 bg-white">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold text-[#1d1d1f]">
+                        {t("lblRightCornerDesc")}
+                      </span>
+                    </div>
+                    <div className="flex bg-[#e8e8ea] rounded-xl p-0.5 border border-black/5 w-full">
+                      {(["widgets", "custom"] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => {
+                            settings.updateSetting("rightCornerMode", mode);
+                            emit("settings-changed", { key: "rightCornerMode", value: mode }).catch(console.error);
+                          }}
+                          className={`flex-1 text-center py-2 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer outline-none active:scale-[0.98] ${
+                            settings.rightCornerMode === mode
+                              ? "bg-white shadow-[0_1px_2px_rgba(0,0,0,0.1)] text-[#1d1d1f]"
+                              : "text-[#555557] hover:text-[#1d1d1f] hover:bg-black/[0.02]"
+                          }`}
+                        >
+                          {mode === "widgets" ? t("rightCornerWidgets") : t("rightCornerCustom")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom URL / File Input */}
+                  {settings.rightCornerMode === "custom" && (
+                    <div className="flex flex-col gap-3 py-3.5 px-4 bg-white">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold text-[#1d1d1f]">
+                          {t("lblCustomUrl")}
+                        </span>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={settings.customRightCornerUrl}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              settings.updateSetting("customRightCornerUrl", val);
+                              emit("settings-changed", { key: "customRightCornerUrl", value: val }).catch(console.error);
+                            }}
+                            placeholder={t("phCustomUrl")}
+                            className="flex-1 bg-[#f5f5f7] border border-black/10 rounded-lg px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-[#86868b] outline-none focus:bg-white focus:border-[#007aff] focus:ring-1 focus:ring-[#007aff] transition-all"
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const selected = await open({
+                                  multiple: false,
+                                  filters: [{
+                                    name: "Images",
+                                    extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"],
+                                  }],
+                                });
+                                if (selected) {
+                                  const url = convertFileSrc(selected);
+                                  settings.updateSetting("customRightCornerUrl", url);
+                                  emit("settings-changed", { key: "customRightCornerUrl", value: url }).catch(console.error);
+                                }
+                              } catch (e) {
+                                console.error("File picker failed", e);
+                              }
+                            }}
+                            className="bg-[#007aff] hover:bg-[#0062cc] active:scale-95 text-white text-xs font-semibold px-4 py-2 rounded-lg cursor-pointer transition-all flex-shrink-0"
+                          >
+                            {t("btnBrowse")}
+                          </button>
+                        </div>
+                      </div>
+
+                      {settings.customRightCornerUrl && (
+                        <div className="flex items-center justify-between gap-3 bg-[#f5f5f7] p-2.5 rounded-xl border border-black/5">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-black/10 bg-black/5 flex items-center justify-center shrink-0">
+                              <img
+                                src={settings.customRightCornerUrl}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[10px] font-semibold text-[#1d1d1f] truncate">
+                                {settings.customRightCornerUrl.split('/').pop() || 'image'}
+                              </span>
+                              <span className="text-[9px] text-[#86868b]">
+                                Image Preview
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              settings.updateSetting("customRightCornerUrl", "");
+                              emit("settings-changed", { key: "customRightCornerUrl", value: "" }).catch(console.error);
+                            }}
+                            className="text-[10px] font-semibold text-[#ff3b30] hover:text-[#ff453a] px-2.5 py-1 rounded-md hover:bg-[#ff3b30]/10 transition-colors cursor-pointer shrink-0"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

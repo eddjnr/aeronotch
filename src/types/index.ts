@@ -41,6 +41,8 @@ export interface WeatherInfo {
 
 export type IslandMode = 'compact' | 'preview' | 'expanded';
 
+export type RightCornerMode = 'widgets' | 'custom';
+
 export interface IslandSettings {
   position: 'top-center' | 'top-left' | 'top-right';
   showMusic: boolean;
@@ -52,4 +54,6 @@ export interface IslandSettings {
   opacity: number;
   language: 'en' | 'pt-BR';
   monitorPlacement: string;
+  rightCornerMode: RightCornerMode;
+  customRightCornerUrl: string;
 }

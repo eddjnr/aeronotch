@@ -486,6 +486,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_positioner::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
@@ -566,6 +567,9 @@ pub fn run() {
             let app_handle = app.handle().clone();
             let monitor = system_monitor.clone();
             tauri::async_runtime::spawn(async move {
+                // Perform WMI GPU detection asynchronously off the main thread
+                monitor.detect_gpu_name();
+
                 loop {
                     let stats = monitor.get_stats();
                     let _ = app_handle.emit("system-stats", &stats);

@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS: IslandSettings = {
   opacity: 1,
   language: "en",
   monitorPlacement: "primary",
+  rightCornerMode: "widgets",
+  customRightCornerUrl: "",
 };
 
 export const useSettingsStore = create<SettingsState>()(
