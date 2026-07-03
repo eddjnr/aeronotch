@@ -1,6 +1,5 @@
 use serde::Serialize;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
 use sysinfo::System;
 
 #[derive(Debug, Serialize, Clone)]
@@ -9,6 +8,16 @@ pub struct DiskStats {
     pub total: u64,
     pub used: u64,
     pub percent: f32,
+}
+
+/// Which tool/provider to use for querying GPU metrics.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum GpuBackend {
+    None,
+    NvidiaSmi,
+    AmdRocmSmi,
+    IntelXpuSmi,
+    WindowsWmi,
 }
 
 /// Real-time system statistics emitted to the frontend.
@@ -61,7 +70,7 @@ pub struct SystemMonitor {
     system: Mutex<System>,
     cpu_name: String,
     gpu_name: Mutex<String>,
-    has_nvidia_smi: AtomicBool,
+    gpu_backend: Mutex<GpuBackend>,
     cpu_temp_method: Mutex<CpuTempMethod>,
     last_temp_detection: Mutex<std::time::Instant>,
     #[cfg(target_os = "windows")]
@@ -118,7 +127,7 @@ impl SystemMonitor {
             .unwrap_or_else(|| "Processor".to_string());
 
         let gpu_name = Mutex::new("Graphics Card".to_string());
-        let has_nvidia_smi = AtomicBool::new(false);
+        let gpu_backend = Mutex::new(GpuBackend::None);
         let cpu_temp_method = Mutex::new(CpuTempMethod::Unknown);
         let last_temp_detection = Mutex::new(std::time::Instant::now());
 
@@ -129,7 +138,7 @@ impl SystemMonitor {
             system: Mutex::new(sys),
             cpu_name,
             gpu_name,
-            has_nvidia_smi,
+            gpu_backend,
             cpu_temp_method,
             last_temp_detection,
             #[cfg(target_os = "windows")]
@@ -143,25 +152,47 @@ impl SystemMonitor {
             "-Command",
             "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name | Select-Object -First 1"
         ]).unwrap_or_else(|| "Graphics Card".to_string());
-        
-        let is_nvidia = gpu.to_lowercase().contains("nvidia");
-        
-        // Check if nvidia-smi is actually executable
-        let nvidia_smi_available = if is_nvidia {
-            run_command("nvidia-smi", &["--help"]).is_some()
-        } else {
-            false
-        };
-        
-        self.has_nvidia_smi.store(nvidia_smi_available, Ordering::Relaxed);
-        
+
         if let Ok(mut name) = self.gpu_name.lock() {
             *name = gpu;
         }
+
+        self.detect_gpu_backend();
     }
 
     #[cfg(not(target_os = "windows"))]
     pub fn detect_gpu_name(&self) {}
+
+    /// Detect which GPU backend is available based on vendor + installed tools.
+    fn detect_gpu_backend(&self) {
+        let gpu_name = self.gpu_name.lock().unwrap().clone().to_lowercase();
+
+        let backend = if gpu_name.contains("nvidia") {
+            if run_command("nvidia-smi", &["--help"]).is_some() {
+                GpuBackend::NvidiaSmi
+            } else {
+                GpuBackend::WindowsWmi
+            }
+        } else if gpu_name.contains("amd") || gpu_name.contains("radeon") || gpu_name.contains("advanced micro devices") {
+            if run_command("rocm-smi", &["--showuse"]).is_some() {
+                GpuBackend::AmdRocmSmi
+            } else {
+                GpuBackend::WindowsWmi
+            }
+        } else if gpu_name.contains("intel") {
+            if run_command("xpu-smi", &["--help"]).is_some() {
+                GpuBackend::IntelXpuSmi
+            } else {
+                GpuBackend::WindowsWmi
+            }
+        } else {
+            GpuBackend::WindowsWmi
+        };
+
+        if let Ok(mut b) = self.gpu_backend.lock() {
+            *b = backend;
+        }
+    }
 
     /// Refresh CPU, memory, GPU and disk counters and return a snapshot.
     pub fn get_stats(&self) -> SystemStats {
@@ -176,17 +207,7 @@ impl SystemMonitor {
             0.0
         };
 
-        // Query GPU usage via nvidia-smi if available
-        let gpu_usage = if self.has_nvidia_smi.load(Ordering::Relaxed) {
-            run_command("nvidia-smi", &[
-                "--query-gpu=utilization.gpu",
-                "--format=csv,noheader,nounits"
-            ])
-            .and_then(|s| s.replace(',', ".").parse::<f32>().ok())
-            .unwrap_or(0.0)
-        } else {
-            0.0
-        };
+        let gpu_usage = self.query_gpu_usage();
 
         // Query disk space using sysinfo
         use sysinfo::Disks;
@@ -371,17 +392,7 @@ impl SystemMonitor {
         let gpu_temp = components.iter()
             .find(|c| c.label().to_lowercase().contains("gpu"))
             .and_then(|c| c.temperature())
-            .or_else(|| {
-                if self.has_nvidia_smi.load(Ordering::Relaxed) {
-                    run_command("nvidia-smi", &[
-                        "--query-gpu=temperature.gpu",
-                        "--format=csv,noheader,nounits"
-                    ])
-                    .and_then(|out| out.replace(',', ".").parse::<f32>().ok())
-                } else {
-                    None
-                }
-            });
+            .or_else(|| self.query_gpu_temp_via_smi());
 
         SystemStats {
             cpu_name: self.cpu_name.clone(),
@@ -394,6 +405,100 @@ impl SystemMonitor {
             disks: disk_stats,
             cpu_temp,
             gpu_temp,
+        }
+    }
+
+    /// Query GPU utilisation using the detected backend.
+    fn query_gpu_usage(&self) -> f32 {
+        match *self.gpu_backend.lock().unwrap() {
+            GpuBackend::NvidiaSmi => {
+                run_command("nvidia-smi", &[
+                    "--query-gpu=utilization.gpu",
+                    "--format=csv,noheader,nounits"
+                ])
+                .and_then(|s| s.replace(',', ".").parse::<f32>().ok())
+                .unwrap_or(0.0)
+            }
+            GpuBackend::AmdRocmSmi => {
+                run_command("rocm-smi", &["--showuse"])
+                    .and_then(|s| {
+                        let nums: Vec<f32> = s.lines()
+                            .flat_map(|l| {
+                                l.split(|c: char| !c.is_ascii_digit() && c != '.')
+                                    .filter_map(|n| n.parse::<f32>().ok())
+                            })
+                            .collect();
+                        nums.into_iter().reduce(f32::max)
+                    })
+                    .unwrap_or_else(Self::query_gpu_usage_via_wmi)
+            }
+            GpuBackend::IntelXpuSmi => {
+                run_command("xpu-smi", &["dump", "-d", "0", "-g", "0", "-m", "utilization"])
+                    .and_then(|s| {
+                        let nums: Vec<f32> = s.lines()
+                            .flat_map(|l| {
+                                l.split(|c: char| !c.is_ascii_digit() && c != '.')
+                                    .filter_map(|n| n.parse::<f32>().ok())
+                            })
+                            .collect();
+                        nums.into_iter().reduce(f32::max)
+                    })
+                    .unwrap_or_else(Self::query_gpu_usage_via_wmi)
+            }
+            GpuBackend::WindowsWmi => Self::query_gpu_usage_via_wmi(),
+            GpuBackend::None => 0.0,
+        }
+    }
+
+    /// Universal fallback: query GPU utilisation via Windows WMI performance counters.
+    #[cfg(target_os = "windows")]
+    fn query_gpu_usage_via_wmi() -> f32 {
+        run_command("powershell", &[
+            "-Command",
+            "$v = Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction SilentlyContinue | Where-Object { $_.EngType -eq '3D' } | Select-Object -ExpandProperty PercentGPUTime; if ($v) { ($v | Measure-Object -Average).Average } else { 0 }"
+        ])
+        .and_then(|s| s.replace(',', ".").parse::<f32>().ok())
+        .unwrap_or(0.0)
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn query_gpu_usage_via_wmi() -> f32 { 0.0 }
+
+    /// Query GPU temperature via the detected SMI backend as fallback.
+    fn query_gpu_temp_via_smi(&self) -> Option<f32> {
+        match *self.gpu_backend.lock().unwrap() {
+            GpuBackend::NvidiaSmi => {
+                run_command("nvidia-smi", &[
+                    "--query-gpu=temperature.gpu",
+                    "--format=csv,noheader,nounits"
+                ])
+                .and_then(|out| out.replace(',', ".").parse::<f32>().ok())
+            }
+            GpuBackend::AmdRocmSmi => {
+                run_command("rocm-smi", &["--showtemp"])
+                    .and_then(|s| {
+                        let nums: Vec<f32> = s.lines()
+                            .flat_map(|l| {
+                                l.split(|c: char| !c.is_ascii_digit() && c != '.')
+                                    .filter_map(|n| n.parse::<f32>().ok())
+                            })
+                            .collect();
+                        nums.into_iter().reduce(f32::max)
+                    })
+            }
+            GpuBackend::IntelXpuSmi => {
+                run_command("xpu-smi", &["dump", "-d", "0", "-g", "0", "-m", "temperature"])
+                    .and_then(|s| {
+                        let nums: Vec<f32> = s.lines()
+                            .flat_map(|l| {
+                                l.split(|c: char| !c.is_ascii_digit() && c != '.')
+                                    .filter_map(|n| n.parse::<f32>().ok())
+                            })
+                            .collect();
+                        nums.into_iter().reduce(f32::max)
+                    })
+            }
+            _ => None,
         }
     }
 }
