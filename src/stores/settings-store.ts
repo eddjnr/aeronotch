@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: IslandSettings = {
   showWeather: true,
   showClock: true,
   showTray: true,
+  showMic: true,
   opacity: 1,
   language: "en",
   monitorPlacement: "primary",

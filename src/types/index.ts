@@ -29,6 +29,11 @@ export interface SystemStats {
   gpu_temp?: number | null;
 }
 
+export interface MicStatus {
+  is_muted: boolean;
+  has_device: boolean;
+}
+
 export interface WeatherInfo {
   temperature: number;
   apparent_temperature: number;
@@ -51,6 +56,7 @@ export interface IslandSettings {
   showWeather: boolean;
   showClock: boolean;
   showTray: boolean;
+  showMic: boolean;
   opacity: number;
   language: 'en' | 'pt-BR';
   monitorPlacement: string;

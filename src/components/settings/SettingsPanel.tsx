@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Link2,
   Folder,
+  Mic,
 } from "lucide-react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -155,7 +156,8 @@ export function SettingsPanel() {
       | "showSystem"
       | "showWeather"
       | "showClock"
-      | "showTray",
+      | "showTray"
+      | "showMic",
   ) => {
     const nextValue = !settings[key];
     settings.updateSetting(key, nextValue);
@@ -205,6 +207,7 @@ export function SettingsPanel() {
       showWeather: true,
       showClock: true,
       showTray: true,
+      showMic: true,
       opacity: 1,
       language: "en",
       monitorPlacement: "primary",
@@ -645,6 +648,24 @@ export function SettingsPanel() {
                     <IOSSwitch
                       checked={settings.showTray}
                       onChange={() => handleToggleWidget("showTray")}
+                    />
+                  </div>
+
+                  {/* Microphone Indicator */}
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#ff3b30] text-white shadow-[0_1px_3px_rgba(255,59,48,0.3)] flex-shrink-0">
+                        <Mic className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-[#1d1d1f]">
+                          {t("lblMicWidget")}
+                        </span>
+                      </div>
+                    </div>
+                    <IOSSwitch
+                      checked={settings.showMic}
+                      onChange={() => handleToggleWidget("showMic")}
                     />
                   </div>
                 </div>

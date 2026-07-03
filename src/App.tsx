@@ -5,6 +5,7 @@ import { SettingsPanel } from './components/settings/SettingsPanel';
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { useSystemInfo } from './hooks/useSystemInfo';
 import { useMediaInfo } from './hooks/useMediaInfo';
+import { useMicStatus } from './hooks/useMicStatus';
 import { useWeatherInfo } from './hooks/useWeatherInfo';
 import { useSettingsStore } from './stores/settings-store';
 import { syncMonitorWindows } from './lib/tauri-commands';
@@ -29,6 +30,7 @@ function App() {
   // Initialize data hooks
   useSystemInfo();
   useMediaInfo();
+  useMicStatus();
   useWeatherInfo();
 
   // Sync monitor windows on startup

@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { MediaInfo, SystemStats, WeatherInfo } from '../types';
+import type { MediaInfo, MicStatus, SystemStats, WeatherInfo } from '../types';
 
 export async function getSystemInfo(): Promise<SystemStats> {
   return invoke<SystemStats>('get_system_info');
@@ -17,6 +17,18 @@ export async function mediaControl(
 
 export async function mediaSeek(positionSeconds: number): Promise<void> {
   return invoke('media_seek', { positionSeconds });
+}
+
+export async function getMicStatus(): Promise<MicStatus> {
+  return invoke<MicStatus>('get_mic_status');
+}
+
+export async function setMicMute(mute: boolean): Promise<MicStatus> {
+  return invoke<MicStatus>('set_mic_mute', { mute });
+}
+
+export async function toggleMicMute(): Promise<MicStatus> {
+  return invoke<MicStatus>('toggle_mic_mute');
 }
 
 export async function getWeather(): Promise<WeatherInfo> {

@@ -1,9 +1,11 @@
 mod media;
+mod mic;
 mod system_info;
 mod weather;
 mod google_calendar;
 
 use media::{MediaAction, MediaInfo};
+use mic::MicStatus;
 use system_info::{SystemMonitor, SystemStats};
 use weather::{WeatherClient, WeatherInfo};
 
@@ -30,6 +32,25 @@ async fn get_media_info() -> Option<MediaInfo> {
 #[tauri::command]
 async fn media_control(action: MediaAction) -> Result<(), String> {
     action.execute().await
+}
+
+/// Returns the current mute state of the default microphone (capture) device.
+#[tauri::command]
+fn get_mic_status() -> MicStatus {
+    mic::get_mic_status()
+}
+
+/// Explicitly sets the mute state of the default microphone.
+#[tauri::command]
+fn set_mic_mute(mute: bool) -> Result<MicStatus, String> {
+    mic::set_mic_mute(mute)
+}
+
+/// Toggles the mute state of the default microphone. Used for quick
+/// mute/unmute during calls (Teams/Zoom/etc.).
+#[tauri::command]
+fn toggle_mic_mute() -> Result<MicStatus, String> {
+    mic::toggle_mic_mute()
 }
 
 /// Changes the playback position of the current media session (seeking).
@@ -498,6 +519,9 @@ pub fn run() {
             get_media_info,
             media_control,
             media_seek,
+            get_mic_status,
+            set_mic_mute,
+            toggle_mic_mute,
             get_weather,
             set_weather_location,
             set_island_size,
@@ -597,6 +621,20 @@ pub fn run() {
                         }
                     }
                     tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+                }
+            });
+
+            // ── Background: emit mic mute status every 500ms (detects external changes too, e.g. Teams/Zoom or hardware mute keys) ──
+            let app_handle_mic = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let mut last_status: Option<MicStatus> = None;
+                loop {
+                    let status = mic::get_mic_status();
+                    if last_status != Some(status) {
+                        last_status = Some(status);
+                        let _ = app_handle_mic.emit("mic-status-changed", &status);
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
                 }
             });
 

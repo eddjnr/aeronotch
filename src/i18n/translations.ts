@@ -44,6 +44,7 @@ export const translations = {
     lblWeatherWidget: "Weather Details",
     lblClockWidget: "Digital Clock",
     lblTrayWidget: "File Tray",
+    lblMicWidget: "Microphone Indicator",
 
     // Right Corner
     lblRightCorner: "Right Corner (Compact)",
@@ -98,6 +99,10 @@ export const translations = {
     noTitle: "No Title",
     noMusic: "No music playing",
     feelsLike: "Feels like {temp}°",
+    micMuted: "Mic muted",
+    micLive: "Mic live",
+    micMuteAction: "Mute microphone",
+    micUnmuteAction: "Unmute microphone",
 
     // Weather condition codes
     weather_0: "Clear sky",
@@ -220,6 +225,7 @@ export const translations = {
     lblWeatherWidget: "Detalhes do Clima",
     lblClockWidget: "Relógio Digital",
     lblTrayWidget: "Bandeja de Arquivos",
+    lblMicWidget: "Indicador de Microfone",
 
     // Right Corner
     lblRightCorner: "Canto Direito (Compacto)",
@@ -274,6 +280,10 @@ export const translations = {
     noTitle: "Sem Título",
     noMusic: "Nenhuma música tocando",
     feelsLike: "Sensação térmica {temp}°",
+    micMuted: "Mic mutado",
+    micLive: "Mic ativo",
+    micMuteAction: "Mutar microfone",
+    micUnmuteAction: "Reativar microfone",
 
     // Weather condition codes
     weather_0: "Céu limpo",

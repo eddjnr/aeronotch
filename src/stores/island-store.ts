@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { IslandMode, MediaInfo, SystemStats, WeatherInfo } from '../types';
+import type { IslandMode, MediaInfo, MicStatus, SystemStats, WeatherInfo } from '../types';
 
 interface IslandState {
   mode: IslandMode;
@@ -7,6 +7,9 @@ interface IslandState {
 
   mediaInfo: MediaInfo | null;
   setMediaInfo: (info: MediaInfo | null) => void;
+
+  micStatus: MicStatus | null;
+  setMicStatus: (status: MicStatus | null) => void;
 
   systemStats: SystemStats | null;
   setSystemStats: (stats: SystemStats) => void;
@@ -33,6 +36,9 @@ export const useIslandStore = create<IslandState>((set) => ({
 
   mediaInfo: null,
   setMediaInfo: (mediaInfo) => set({ mediaInfo }),
+
+  micStatus: null,
+  setMicStatus: (micStatus) => set({ micStatus }),
 
   systemStats: null,
   setSystemStats: (systemStats) => set({ systemStats }),

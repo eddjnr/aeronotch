@@ -7,6 +7,7 @@ import { MusicWidget } from "../widgets/MusicWidget";
 import { CalendarWidget } from "../widgets/CalendarWidget";
 import { SystemWidget } from "../widgets/SystemWidget";
 import { WeatherWidget, getWeatherIcon } from "../widgets/WeatherWidget";
+import { MicWidget } from "../widgets/MicWidget";
 import { Equalizer } from "./Equalizer";
 import {
   Settings,
@@ -35,7 +36,7 @@ interface IslandLayoutProps {
 }
 
 export function IslandLayout({ mode }: IslandLayoutProps) {
-  const { mediaInfo, systemStats, weatherInfo, activeTab, setActiveTab } =
+  const { mediaInfo, systemStats, weatherInfo, micStatus, activeTab, setActiveTab } =
     useIslandStore();
   const settings = useSettingsStore();
   const trayFileCount = useTrayStore((state) => state.files.length);
@@ -125,7 +126,12 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                   <Folder className="h-3 w-3 text-white" strokeWidth={2.4} />
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 text-white">
+              <div className="flex items-center gap-2.5 text-white">
+                {settings.showMic && (
+                  <ErrorBoundary>
+                    <MicWidget micStatus={micStatus} variant="compact" />
+                  </ErrorBoundary>
+                )}
                 <span className="min-w-[0.75rem] text-right text-[11px] font-bold leading-none tabular-nums">
                   {trayCompactCount}
                 </span>
@@ -144,30 +150,37 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                   </ErrorBoundary>
                 )}
               </div>
-              {settings.rightCornerMode === "custom" &&
-              settings.customRightCornerUrl ? (
-                <div className="flex items-center gap-2">
-                  <img
-                    src={settings.customRightCornerUrl}
-                    alt=""
-                    className="h-5 max-w-[60px] object-contain rounded-sm"
-                    draggable={false}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {settings.showWeather && (
-                    <ErrorBoundary>
-                      <WeatherWidget weather={weatherInfo} mode="compact" />
-                    </ErrorBoundary>
-                  )}
-                  {settings.showSystem && (
-                    <ErrorBoundary>
-                      <SystemWidget stats={systemStats} mode="compact" />
-                    </ErrorBoundary>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center gap-2.5">
+                {settings.showMic && (
+                  <ErrorBoundary>
+                    <MicWidget micStatus={micStatus} variant="compact" />
+                  </ErrorBoundary>
+                )}
+                {settings.rightCornerMode === "custom" &&
+                settings.customRightCornerUrl ? (
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={settings.customRightCornerUrl}
+                      alt=""
+                      className="h-5 max-w-[60px] object-contain rounded-sm"
+                      draggable={false}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {settings.showWeather && (
+                      <ErrorBoundary>
+                        <WeatherWidget weather={weatherInfo} mode="compact" />
+                      </ErrorBoundary>
+                    )}
+                    {settings.showSystem && (
+                      <ErrorBoundary>
+                        <SystemWidget stats={systemStats} mode="compact" />
+                      </ErrorBoundary>
+                    )}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </motion.div>
@@ -197,6 +210,11 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
             )}
           </div>
           <div className="flex items-center gap-3">
+            {settings.showMic && (
+              <ErrorBoundary>
+                <MicWidget micStatus={micStatus} variant="preview" />
+              </ErrorBoundary>
+            )}
             {settings.showClock && (
               <ErrorBoundary>
                 <ClockWidget mode="preview" />
@@ -331,7 +349,12 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                   </button>
                 )}
               </div>
-              <div className="flex items-center text-white/50 pr-1">
+              <div className="flex items-center gap-1 text-white/50 pr-1">
+                {settings.showMic && (
+                  <ErrorBoundary>
+                    <MicWidget micStatus={micStatus} variant="header" />
+                  </ErrorBoundary>
+                )}
                 <button
                   type="button"
                   onClick={() => openSettingsWindow()}
