@@ -80,6 +80,7 @@ export function Island() {
               updateWindowSize("expanded");
               setMode("expanded");
             }
+            setActiveTab("tray");
             setIsDragging(true);
           } else if (event.payload.type === "drop") {
             setIsDragging(false);

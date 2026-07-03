@@ -15,6 +15,7 @@ import {
   Upload,
   MoreVertical,
   Check,
+  X,
 } from "lucide-react";
 import { useTrayStore, TrayFile } from "../../stores/tray-store";
 import { useIslandStore } from "../../stores/island-store";
@@ -90,27 +91,25 @@ function isImage(extension: string) {
 
 // Component to render image preview
 function ImagePreview({ path, name }: { path: string; name: string }) {
-  const [error, setError] = useState(false);
-  const [src, setSrc] = useState("");
+  const [failedPath, setFailedPath] = useState<string | null>(null);
+  let src = "";
 
-  useEffect(() => {
-    try {
-      setSrc(convertFileSrc(path));
-    } catch (e) {
-      setError(true);
-    }
-  }, [path]);
+  try {
+    src = convertFileSrc(path);
+  } catch {
+    src = "";
+  }
 
-  if (error || !src) {
+  if (!src || failedPath === path) {
     return <ImageIcon className="w-8 h-8 text-sky-400 fill-sky-400/10" />;
   }
 
   return (
-    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/5 shadow-sm border border-white/5 flex items-center justify-center">
+    <div className="w-11 h-11 rounded-lg overflow-hidden bg-white/5 shadow-sm border border-white/5 flex items-center justify-center">
       <img
         src={src}
         alt={name}
-        onError={() => setError(true)}
+        onError={() => setFailedPath(path)}
         className="w-full h-full object-cover"
       />
     </div>
@@ -120,6 +119,7 @@ function ImagePreview({ path, name }: { path: string; name: string }) {
 export function TrayWidget() {
   const { files, removeFile, clearTray } = useTrayStore();
   const { t } = useTranslation();
+  const isDragging = useIslandStore((s) => s.isDragging);
   const setIsDropdownOpen = useIslandStore((s) => s.setIsDropdownOpen);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -128,9 +128,19 @@ export function TrayWidget() {
     if ((e.target as HTMLElement).closest("button")) {
       return;
     }
+    toggleSelected(id);
+  };
+
+  const toggleSelected = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
+  };
+
+  const handleFileKeyDown = (id: string, e: React.KeyboardEvent) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    toggleSelected(id);
   };
 
   const handleCopySelected = async () => {
@@ -184,54 +194,77 @@ export function TrayWidget() {
     <div className="flex flex-col h-full text-white select-none relative">
       {files.length === 0 ? (
         // Empty State
-        <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-xl bg-white/[0.02] p-4 text-center transition-all duration-300">
-          <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center mb-2.5">
-            <Upload className="w-5 h-5 text-white/30" />
+        <div
+          className={`flex-1 flex flex-col items-center justify-center border border-dashed rounded-xl p-4 text-center transition-all duration-200 ${
+            isDragging
+              ? "border-white/45 bg-white/[0.08] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_0_18px_rgba(255,255,255,0.08)]"
+              : "border-white/10 bg-white/[0.02]"
+          }`}
+        >
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center mb-2.5 transition-all duration-200 ${
+              isDragging ? "bg-white text-black scale-105" : "bg-white/[0.04]"
+            }`}
+          >
+            <Upload
+              className={`w-5 h-5 transition-colors duration-200 ${
+                isDragging ? "text-black" : "text-white/30"
+              }`}
+            />
           </div>
-          <span className="text-[11px] text-white/40 font-medium">
+          <span
+            className={`text-[11px] font-medium transition-colors duration-200 ${
+              isDragging ? "text-white/90" : "text-white/40"
+            }`}
+          >
             {t("trayEmpty")}
           </span>
         </div>
       ) : (
         // File list state
-        <div className="flex flex-col h-full justify-between">
+        <div className="relative flex flex-col h-full min-h-0">
           {/* Header Action Bar */}
-          <div className="flex items-center justify-between mb-1.5 px-1 min-h-[22px] w-full">
+          <div className="relative flex h-7 flex-shrink-0 items-center justify-between px-1 pb-1.5 w-full overflow-hidden">
             {selectedIds.length > 0 ? (
               <div className="flex items-center gap-2 w-full justify-between animate-fade-in">
-                <span className="text-[9px] text-white/50 font-medium">
+                <span className="flex ml-0.5 h-5 items-center rounded-full bg-white/[0.04] px-2 text-[9px] font-medium text-white/55 tabular-nums shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
                   {selectedIds.length} selecionado
                   {selectedIds.length > 1 ? "s" : ""}
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex h-6 items-center gap-0.5 rounded-full border border-white/[0.07] bg-white/[0.045] p-0.5 shadow-[inset_0_1px_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.18)]">
                   <button
+                    type="button"
                     onClick={handleCopySelected}
-                    className="text-[9px] font-semibold text-sky-400 hover:text-sky-300 transition-colors cursor-pointer bg-sky-500/10 hover:bg-sky-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-sky-500/20 animate-scale-in"
+                    className="flex h-5 items-center gap-1 rounded-full bg-white/[0.12] px-2.5 text-[9px] font-semibold text-white shadow-[inset_0_1px_rgba(255,255,255,0.08)] transition-all duration-150 hover:bg-white/[0.16] active:scale-[0.97] cursor-pointer"
                   >
-                    <Copy className="w-2.5 h-2.5" />
+                    <Copy className="w-2.5 h-2.5 text-sky-300" />
                     Copiar
                   </button>
                   <button
+                    type="button"
                     onClick={handleRemoveSelected}
-                    className="text-[9px] font-semibold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-rose-500/20 animate-scale-in"
+                    className="flex h-5 items-center gap-1 rounded-full px-2.5 text-[9px] font-medium text-white/62 transition-all duration-150 hover:bg-rose-500/[0.13] hover:text-rose-100 active:scale-[0.97] cursor-pointer"
                   >
-                    <Trash2 className="w-2.5 h-2.5" />
+                    <Trash2 className="w-2.5 h-2.5 text-rose-300/85" />
                     Remover
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSelectedIds([])}
-                    className="text-[9px] font-medium text-white/50 hover:text-white/80 transition-colors cursor-pointer bg-white/[0.04] hover:bg-white/[0.08] px-2 py-0.5 rounded-full"
+                    aria-label="Desmarcar arquivos"
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-white/45 transition-all duration-150 hover:bg-white/[0.09] hover:text-white/80 active:scale-[0.94] cursor-pointer"
                   >
-                    Desmarcar
+                    <X className="h-2.5 w-2.5" />
                   </button>
                 </div>
               </div>
             ) : (
               <div className="flex items-center justify-between w-full">
-                <span className="text-[9px] text-white/30 font-medium">
+                <span className="text-[9px] text-white/30 font-medium ml-0.5">
                   Clique nos arquivos para selecionar vários
                 </span>
                 <button
+                  type="button"
                   onClick={clearTray}
                   className="text-[9px] font-medium text-rose-400/60 hover:text-rose-400 transition-colors cursor-pointer bg-white/[0.02] hover:bg-rose-500/10 px-2.5 py-0.5 rounded-full"
                 >
@@ -241,13 +274,24 @@ export function TrayWidget() {
             )}
           </div>
 
-          <div className="flex-1 overflow-x-auto overflow-y-hidden flex items-center gap-2.5 pr-2 py-1 scrollbar-none">
+          <div
+            className={`relative flex-1 min-h-0 overflow-x-auto overflow-y-hidden flex items-center gap-2.5 rounded-xl px-1 py-2 scrollbar-none transition-all duration-200 ${
+              isDragging
+                ? "border border-dashed border-white/30 bg-white/[0.025] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035)]"
+                : "border border-transparent bg-transparent"
+            }`}
+          >
             {files.map((file) => (
               <div
                 key={file.id}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selectedIds.includes(file.id)}
+                aria-label={file.name}
                 onDoubleClick={() => handleOpen(file)}
                 onClick={(e) => handleToggleSelect(file.id, e)}
-                className={`relative flex-shrink-0 w-[100px] h-[95px] rounded-xl border flex flex-col items-center justify-between p-2.5 transition-all duration-200 cursor-pointer group ${
+                onKeyDown={(e) => handleFileKeyDown(file.id, e)}
+                className={`relative flex-shrink-0 w-[100px] h-[86px] rounded-xl border flex flex-col items-center justify-between p-2 transition-all duration-200 cursor-pointer group ${
                   selectedIds.includes(file.id)
                     ? "border-sky-500 bg-sky-500/10 shadow-[0_0_12px_rgba(14,165,233,0.15)]"
                     : "border-white/[0.04] hover:border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
@@ -266,7 +310,7 @@ export function TrayWidget() {
                   )}
                 </div>
                 {/* File Icon / Preview */}
-                <div className="flex-1 flex items-center justify-center pointer-events-none w-full h-[50px] overflow-hidden my-0.5">
+                <div className="flex-1 flex items-center justify-center pointer-events-none w-full h-[42px] overflow-hidden my-0.5">
                   {isImage(file.extension) ? (
                     <ImagePreview path={file.path} name={file.name} />
                   ) : (
@@ -287,6 +331,7 @@ export function TrayWidget() {
                 <DropdownMenu onOpenChange={setIsDropdownOpen}>
                   <DropdownMenuTrigger asChild>
                     <button
+                      type="button"
                       onClick={(e) => e.stopPropagation()}
                       className="absolute top-1 right-1 p-0.5 rounded-full hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
                     >

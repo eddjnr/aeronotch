@@ -15,9 +15,11 @@ import {
   Wind,
   Droplets,
   Folder,
+  File,
 } from "lucide-react";
 import { useIslandStore } from "../../stores/island-store";
 import { useSettingsStore } from "../../stores/settings-store";
+import { useTrayStore } from "../../stores/tray-store";
 import { openSettingsWindow } from "../../lib/tauri-commands";
 import type { IslandMode } from "../../types";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -28,15 +30,10 @@ interface IslandLayoutProps {
 }
 
 export function IslandLayout({ mode }: IslandLayoutProps) {
-  const {
-    mediaInfo,
-    systemStats,
-    weatherInfo,
-    activeTab,
-    setActiveTab,
-    isDragging
-  } = useIslandStore();
+  const { mediaInfo, systemStats, weatherInfo, activeTab, setActiveTab } =
+    useIslandStore();
   const settings = useSettingsStore();
+  const trayFileCount = useTrayStore((state) => state.files.length);
   const { t } = useTranslation();
   const willChange = useWillChange();
 
@@ -45,6 +42,12 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
   const hasSystemTab = settings.showSystem;
   const hasWeatherTab = settings.showWeather;
   const hasTrayTab = settings.showTray;
+  const shouldShowTrayCompactSummary =
+    mode === "compact" &&
+    activeTab === "tray" &&
+    hasTrayTab &&
+    trayFileCount > 0;
+  const trayCompactCount = trayFileCount > 99 ? "99+" : String(trayFileCount);
 
   // Enforce correct tab focus fallback when widget visibility changes in settings
   useEffect(() => {
@@ -65,7 +68,14 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
       else if (hasSystemTab) setActiveTab("system");
       else if (hasWeatherTab) setActiveTab("weather");
     }
-  }, [activeTab, hasHomeTab, hasSystemTab, hasWeatherTab, hasTrayTab, setActiveTab]);
+  }, [
+    activeTab,
+    hasHomeTab,
+    hasSystemTab,
+    hasWeatherTab,
+    hasTrayTab,
+    setActiveTab,
+  ]);
 
   return (
     <div className="w-full h-full relative overflow-hidden">
@@ -77,22 +87,45 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
           animate={{ opacity: 1, filter: "blur(0px)" }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           style={{ willChange }}
-          className="absolute inset-0 flex items-center justify-between px-5 whitespace-nowrap"
+          className={`absolute inset-0 flex items-center justify-between whitespace-nowrap ${
+            shouldShowTrayCompactSummary ? "px-3" : "px-5"
+          }`}
         >
-          <div className="flex items-center gap-3">
-            {settings.showMusic && mediaInfo?.is_playing && (
-              <Equalizer isPlaying={true} />
-            )}
-            {settings.showClock && <ClockWidget mode="compact" />}
-          </div>
-          <div className="flex items-center gap-2">
-            {settings.showWeather && (
-              <WeatherWidget weather={weatherInfo} mode="compact" />
-            )}
-            {settings.showSystem && (
-              <SystemWidget stats={systemStats} mode="compact" />
-            )}
-          </div>
+          {shouldShowTrayCompactSummary ? (
+            <>
+              <div className="flex items-center gap-3">
+                {settings.showMusic && mediaInfo?.is_playing && (
+                  <Equalizer isPlaying={true} />
+                )}
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
+                  <Folder className="h-3 w-3 text-white" strokeWidth={2.4} />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 text-white">
+                <span className="min-w-[0.75rem] text-right text-[11px] font-bold leading-none tabular-nums">
+                  {trayCompactCount}
+                </span>
+                <File className="h-3.5 w-3.5" strokeWidth={2.35} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                {settings.showMusic && mediaInfo?.is_playing && (
+                  <Equalizer isPlaying={true} />
+                )}
+                {settings.showClock && <ClockWidget mode="compact" />}
+              </div>
+              <div className="flex items-center gap-2">
+                {settings.showWeather && (
+                  <WeatherWidget weather={weatherInfo} mode="compact" />
+                )}
+                {settings.showSystem && (
+                  <SystemWidget stats={systemStats} mode="compact" />
+                )}
+              </div>
+            </>
+          )}
         </motion.div>
       )}
 
@@ -144,11 +177,13 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
               <div className="flex items-center gap-1 relative">
                 {hasHomeTab && (
                   <button
+                    type="button"
                     onClick={() => setActiveTab("home")}
-                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${activeTab === "home"
-                      ? "text-white font-bold"
-                      : "text-white/40 hover:text-white/60"
-                      }`}
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
+                      activeTab === "home"
+                        ? "text-white font-bold"
+                        : "text-white/40 hover:text-white/60"
+                    }`}
                   >
                     {activeTab === "home" && (
                       <motion.div
@@ -167,11 +202,13 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 )}
                 {hasTrayTab && (
                   <button
+                    type="button"
                     onClick={() => setActiveTab("tray")}
-                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${activeTab === "tray"
-                      ? "text-white font-bold"
-                      : "text-white/40 hover:text-white/60"
-                      }`}
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
+                      activeTab === "tray"
+                        ? "text-white font-bold"
+                        : "text-white/40 hover:text-white/60"
+                    }`}
                   >
                     {activeTab === "tray" && (
                       <motion.div
@@ -190,11 +227,13 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 )}
                 {hasSystemTab && (
                   <button
+                    type="button"
                     onClick={() => setActiveTab("system")}
-                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${activeTab === "system"
-                      ? "text-white font-bold"
-                      : "text-white/40 hover:text-white/60"
-                      }`}
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
+                      activeTab === "system"
+                        ? "text-white font-bold"
+                        : "text-white/40 hover:text-white/60"
+                    }`}
                   >
                     {activeTab === "system" && (
                       <motion.div
@@ -213,11 +252,13 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 )}
                 {hasWeatherTab && (
                   <button
+                    type="button"
                     onClick={() => setActiveTab("weather")}
-                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${activeTab === "weather"
-                      ? "text-white font-bold"
-                      : "text-white/45 hover:text-white/60"
-                      }`}
+                    className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer select-none focus:outline-none z-10 ${
+                      activeTab === "weather"
+                        ? "text-white font-bold"
+                        : "text-white/45 hover:text-white/60"
+                    }`}
                   >
                     {activeTab === "weather" && (
                       <motion.div
@@ -237,6 +278,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
               </div>
               <div className="flex items-center text-white/50 pr-1">
                 <button
+                  type="button"
                   onClick={() => openSettingsWindow()}
                   className="hover:text-white transition-colors cursor-pointer focus:outline-none p-1.5 rounded-full hover:bg-white/[0.04]"
                 >
@@ -255,10 +297,11 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                     animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                     exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
                     transition={{ duration: 0.14, ease: "easeInOut" }}
-                    className={`grid gap-4 h-full ${settings.showMusic && settings.showCalendar
-                      ? "grid-cols-[1.2fr_1fr]"
-                      : "grid-cols-1"
-                      }`}
+                    className={`grid gap-4 h-full ${
+                      settings.showMusic && settings.showCalendar
+                        ? "grid-cols-[1.2fr_1fr]"
+                        : "grid-cols-1"
+                    }`}
                   >
                     {/* Tab 1: Home (Music, Calendar) */}
                     {settings.showMusic && (
@@ -386,34 +429,6 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
               </AnimatePresence>
             </div>
           </div>
-
-          {/* Drag & Drop Window Overlay */}
-          <AnimatePresence>
-            {isDragging && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
-                className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md rounded-2xl border border-white/10"
-              >
-                <motion.div
-                  initial={{ scale: 0.95, y: 10 }}
-                  animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0.95, y: 10 }}
-                  transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                  className="flex flex-col items-center gap-3 text-center p-6"
-                >
-                  <div className="w-14 h-14 rounded-full bg-white/[0.08] flex items-center justify-center shadow-lg border border-white/10 animate-bounce">
-                    <Folder className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-xs font-semibold text-white/90">
-                    {t("trayDropOverlay")}
-                  </span>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
       )}
     </div>
