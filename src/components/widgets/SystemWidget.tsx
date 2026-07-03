@@ -149,7 +149,7 @@ export function SystemWidget({ stats, mode }: SystemWidgetProps) {
           <motion.div
             key={activeSubTab}
             initial={{ opacity: 0, x: 4, filter: "blur(2px)" }}
-            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+            animate={{ opacity: 1, x: 0, filter: "none" }}
             exit={{ opacity: 0, x: -4, filter: "blur(2px)" }}
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="flex flex-row items-center gap-4 h-full w-full min-w-0"

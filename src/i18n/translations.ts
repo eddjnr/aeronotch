@@ -169,6 +169,11 @@ export const translations = {
     trayReveal: "Reveal in Explorer",
     trayOpen: "Open",
     trayDropOverlay: "Drop files to add to Tray",
+    traySelectedCount: "selected",
+    trayRemoveSelected: "Remove",
+    trayClearSelection: "Deselect files",
+    traySelectHint: "Click files to select multiple",
+    trayClearAll: "Clear all",
   },
   "pt-BR": {
     // Sidebar Tabs
@@ -274,7 +279,7 @@ export const translations = {
     weather_0: "Céu limpo",
     weather_1: "Predominantemente limpo",
     weather_2: "Parcialmente nublado",
-    weather_3: "Encoberto",
+    weather_3: "Nublado",
     weather_45: "Nevoeiro",
     weather_48: "Nevoeiro",
     weather_51: "Chuvisco",
@@ -340,5 +345,10 @@ export const translations = {
     trayReveal: "Revelar no Explorer",
     trayOpen: "Abrir",
     trayDropOverlay: "Solte os arquivos para adicionar à Bandeja",
+    traySelectedCount: "selecionado",
+    trayRemoveSelected: "Remover",
+    trayClearSelection: "Desmarcar arquivos",
+    traySelectHint: "Clique nos arquivos para selecionar vários",
+    trayClearAll: "Limpar tudo",
   },
 };

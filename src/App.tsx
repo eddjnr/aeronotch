@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Island } from './components/island/Island';
 import { SettingsPanel } from './components/settings/SettingsPanel';
+import { ErrorBoundary } from './components/ui/error-boundary';
 import { useSystemInfo } from './hooks/useSystemInfo';
 import { useMediaInfo } from './hooks/useMediaInfo';
 import { useWeatherInfo } from './hooks/useWeatherInfo';
@@ -40,15 +41,19 @@ function App() {
 
   if (windowLabel === 'settings') {
     return (
-      <main className="w-full h-full bg-[#ececec] text-[#333333] overflow-hidden select-none font-sans">
-        <SettingsPanel />
-      </main>
+      <ErrorBoundary>
+        <main className="w-full h-full bg-[#ececec] text-[#333333] overflow-hidden select-none font-sans">
+          <SettingsPanel />
+        </main>
+      </ErrorBoundary>
     );
   }
 
   return (
     <main className="w-full h-full bg-transparent overflow-hidden">
-      <Island />
+      <ErrorBoundary>
+        <Island />
+      </ErrorBoundary>
     </main>
   );
 }

@@ -18,6 +18,8 @@ interface TrayState {
   removeFile: (id: string) => void;
   renameFile: (id: string, newName: string) => Promise<void>;
   clearTray: () => void;
+  verifyFiles: () => Promise<void>;
+  isVerifying: boolean;
 }
 
 const processingPaths = new Set<string>();
@@ -26,6 +28,7 @@ export const useTrayStore = create<TrayState>()(
   persist(
     (set, get) => ({
       files: [],
+      isVerifying: false,
       addFiles: async (paths) => {
         const newFiles: TrayFile[] = [];
         const existingPaths = new Set(get().files.map((f) => f.path));
@@ -101,6 +104,21 @@ export const useTrayStore = create<TrayState>()(
         }
       },
       clearTray: () => set({ files: [] }),
+      verifyFiles: async () => {
+        const currentFiles = get().files;
+        if (currentFiles.length === 0) return;
+        set({ isVerifying: true });
+        const validFiles: TrayFile[] = [];
+        for (const file of currentFiles) {
+          try {
+            await getFileMetadata(file.path);
+            validFiles.push(file);
+          } catch {
+            // File no longer exists — skip it
+          }
+        }
+        set({ files: validFiles, isVerifying: false });
+      },
     }),
     { name: "aeronotch-tray-files" }
   )

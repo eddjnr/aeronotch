@@ -205,7 +205,7 @@ export function SettingsPanel() {
       showWeather: true,
       showClock: true,
       showTray: true,
-      opacity: 0.92,
+      opacity: 1,
       language: "en",
       monitorPlacement: "primary",
       rightCornerMode: "widgets",
@@ -998,7 +998,7 @@ export function SettingsPanel() {
                         },
                         visible: {
                           opacity: 1,
-                          filter: "blur(0px)",
+                          filter: "none",
                         },
                       },
                     }}

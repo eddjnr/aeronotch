@@ -1,17 +1,29 @@
 use serde::{Deserialize, Serialize};
 use base64::{prelude::BASE64_STANDARD, Engine};
+use lru::LruCache;
 use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSessionManager,
     GlobalSystemMediaTransportControlsSessionPlaybackStatus,
 };
 use windows::Storage::Streams::{Buffer, InputStreamOptions};
+use std::num::NonZeroUsize;
 use std::sync::{Mutex, OnceLock};
 
-// Memory cache for active track metadata to avoid redundant Base64 extraction / stream reads
-static METADATA_CACHE: OnceLock<Mutex<Option<(String, Option<String>)>>> = OnceLock::new();
+/// LRU cache keyed by (title, artist, album) to avoid redundant Base64 extraction.
+/// Bounded at 30 entries — oldest entries are evicted automatically.
+type CacheKey = (String, String, String);
 
-fn get_cache() -> &'static Mutex<Option<(String, Option<String>)>> {
-    METADATA_CACHE.get_or_init(|| Mutex::new(None))
+const MAX_CACHE_ENTRIES: usize = 30;
+/// Maximum size in bytes for a single cached thumbnail (base64 string).
+/// ~1.5 MB raw image equivalent. Larger thumbnails are not cached.
+const MAX_THUMBNAIL_BYTES: usize = 2_000_000;
+
+static THUMBNAIL_CACHE: OnceLock<Mutex<LruCache<CacheKey, Option<String>>>> = OnceLock::new();
+
+fn get_cache() -> &'static Mutex<LruCache<CacheKey, Option<String>>> {
+    THUMBNAIL_CACHE.get_or_init(|| {
+        Mutex::new(LruCache::new(NonZeroUsize::new(MAX_CACHE_ENTRIES).unwrap()))
+    })
 }
 
 /// Information about the currently playing media track.
@@ -163,20 +175,17 @@ impl MediaInfo {
         let artist = props.Artist().map(|s| s.to_string()).unwrap_or_default();
         let album = props.AlbumTitle().map(|s| s.to_string()).unwrap_or_default();
 
-        // Read thumbnail as Base64 Data URL (using cache if song is same)
+        // Read thumbnail as Base64 Data URL (using LRU cache keyed by title+artist+album)
         let mut thumbnail_url = None;
         let cache = get_cache();
         let mut cache_guard = cache.lock().unwrap();
+        let cache_key = (title.clone(), artist.clone(), album.clone());
 
-        let needs_fetch = match &*cache_guard {
-            Some((cached_title, cached_thumb)) if cached_title == &title => {
-                thumbnail_url = cached_thumb.clone();
-                false
-            }
-            _ => true,
-        };
+        if let Some(cached) = cache_guard.get(&cache_key) {
+            thumbnail_url = cached.clone();
+        }
 
-        if needs_fetch && !title.is_empty() {
+        if thumbnail_url.is_none() && !title.is_empty() {
             if let Ok(ref stream_ref) = props.Thumbnail() {
                 if let Ok(stream) = stream_ref.OpenReadAsync().ok()?.get() {
                     let size = stream.Size().unwrap_or(0) as u32;
@@ -189,15 +198,21 @@ impl MediaInfo {
                                 let content_type = stream.ContentType().map(|s| s.to_string()).unwrap_or("image/png".to_string());
                                 let b64 = BASE64_STANDARD.encode(&bytes);
                                 let url = format!("data:{};base64,{}", content_type, b64);
-                                thumbnail_url = Some(url.clone());
-                                *cache_guard = Some((title.clone(), Some(url)));
+                                // Cap thumbnail size to avoid memory bloat
+                                if url.len() <= MAX_THUMBNAIL_BYTES {
+                                    thumbnail_url = Some(url.clone());
+                                    cache_guard.put(cache_key.clone(), Some(url));
+                                } else {
+                                    // Still use the thumbnail but don't cache it
+                                    thumbnail_url = Some(url);
+                                }
                             }
                         }
                     }
                 }
             }
             if thumbnail_url.is_none() {
-                *cache_guard = Some((title.clone(), None));
+                cache_guard.put(cache_key, None);
             }
         }
 

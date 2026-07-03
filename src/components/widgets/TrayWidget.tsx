@@ -117,11 +117,16 @@ function ImagePreview({ path, name }: { path: string; name: string }) {
 }
 
 export function TrayWidget() {
-  const { files, removeFile, clearTray } = useTrayStore();
+  const { files, removeFile, clearTray, verifyFiles, isVerifying } = useTrayStore();
   const { t } = useTranslation();
   const isDragging = useIslandStore((s) => s.isDragging);
   const setIsDropdownOpen = useIslandStore((s) => s.setIsDropdownOpen);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Verify all files still exist on mount, remove stale entries silently
+  useEffect(() => {
+    verifyFiles();
+  }, [verifyFiles]);
 
   const handleToggleSelect = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -151,6 +156,8 @@ export function TrayWidget() {
       setSelectedIds([]);
     } catch (err) {
       console.error("Failed to copy selected files:", err);
+      selectedFiles.forEach((f) => removeFile(f.id));
+      setSelectedIds([]);
     }
   };
 
@@ -171,6 +178,7 @@ export function TrayWidget() {
       await openFileOnDisk(file.path);
     } catch (err) {
       console.error("Failed to open file:", err);
+      removeFile(file.id);
     }
   };
 
@@ -179,6 +187,7 @@ export function TrayWidget() {
       await copyFilesToClipboard([file.path]);
     } catch (err) {
       console.error("Failed to copy file:", err);
+      removeFile(file.id);
     }
   };
 
@@ -187,6 +196,7 @@ export function TrayWidget() {
       await revealInExplorer(file.path);
     } catch (err) {
       console.error("Failed to reveal file in explorer:", err);
+      removeFile(file.id);
     }
   };
 
@@ -206,18 +216,25 @@ export function TrayWidget() {
               isDragging ? "bg-white text-black scale-105" : "bg-white/[0.04]"
             }`}
           >
-            <Upload
-              className={`w-5 h-5 transition-colors duration-200 ${
-                isDragging ? "text-black" : "text-white/30"
-              }`}
-            />
+            {isVerifying ? (
+              <svg className="w-5 h-5 animate-spin text-white/30" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <Upload
+                className={`w-5 h-5 transition-colors duration-200 ${
+                  isDragging ? "text-black" : "text-white/30"
+                }`}
+              />
+            )}
           </div>
           <span
             className={`text-sm transition-colors duration-200 ${
               isDragging ? "text-white/90" : "text-white/40"
             }`}
           >
-            {t("trayEmpty")}
+            {isVerifying ? "Verifying..." : t("trayEmpty")}
           </span>
         </div>
       ) : (
@@ -228,8 +245,7 @@ export function TrayWidget() {
             {selectedIds.length > 0 ? (
               <div className="flex items-center gap-2 w-full justify-between animate-fade-in">
                 <span className="flex ml-0.5 h-5 items-center rounded-full bg-white/[0.04] px-2 text-[9px] font-medium text-white/55 tabular-nums shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
-                  {selectedIds.length} selecionado
-                  {selectedIds.length > 1 ? "s" : ""}
+                  {selectedIds.length} {t("traySelectedCount")}
                 </span>
                 <div className="flex h-6 items-center gap-0.5 rounded-full border border-white/[0.07] bg-white/[0.045] p-0.5 shadow-[inset_0_1px_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.18)]">
                   <button
@@ -238,7 +254,7 @@ export function TrayWidget() {
                     className="flex h-5 items-center gap-1 rounded-full bg-white/[0.12] px-2.5 text-[9px] font-semibold text-white shadow-[inset_0_1px_rgba(255,255,255,0.08)] transition-all duration-150 hover:bg-white/[0.16] active:scale-[0.97] cursor-pointer"
                   >
                     <Copy className="w-2.5 h-2.5 text-sky-300" />
-                    Copiar
+                    {t("trayCopy")}
                   </button>
                   <button
                     type="button"
@@ -246,12 +262,12 @@ export function TrayWidget() {
                     className="flex h-5 items-center gap-1 rounded-full px-2.5 text-[9px] font-medium text-white/62 transition-all duration-150 hover:bg-rose-500/[0.13] hover:text-rose-100 active:scale-[0.97] cursor-pointer"
                   >
                     <Trash2 className="w-2.5 h-2.5 text-rose-300/85" />
-                    Remover
+                    {t("trayRemoveSelected")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedIds([])}
-                    aria-label="Desmarcar arquivos"
+                    aria-label={t("trayClearSelection")}
                     className="flex h-5 w-5 items-center justify-center rounded-full text-white/45 transition-all duration-150 hover:bg-white/[0.09] hover:text-white/80 active:scale-[0.94] cursor-pointer"
                   >
                     <X className="h-2.5 w-2.5" />
@@ -261,14 +277,14 @@ export function TrayWidget() {
             ) : (
               <div className="flex items-center justify-between w-full">
                 <span className="text-[9px] text-white/30 font-medium ml-0.5">
-                  Clique nos arquivos para selecionar vários
+                  {t("traySelectHint")}
                 </span>
                 <button
                   type="button"
                   onClick={clearTray}
                   className="text-[9px] font-medium text-rose-400/60 hover:text-rose-400 transition-colors cursor-pointer bg-white/[0.02] hover:bg-rose-500/10 px-2.5 py-0.5 rounded-full"
                 >
-                  Limpar tudo
+                  {t("trayClearAll")}
                 </button>
               </div>
             )}

@@ -1,5 +1,7 @@
 import { useEffect } from "react";
-import { motion, AnimatePresence, useWillChange } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { EASE } from "../../lib/animation-config";
+import { ErrorBoundary } from "../ui/error-boundary";
 import { ClockWidget } from "../widgets/ClockWidget";
 import { MusicWidget } from "../widgets/MusicWidget";
 import { CalendarWidget } from "../widgets/CalendarWidget";
@@ -22,7 +24,10 @@ import { useSettingsStore } from "../../stores/settings-store";
 import { useTrayStore } from "../../stores/tray-store";
 import { openSettingsWindow } from "../../lib/tauri-commands";
 import type { IslandMode } from "../../types";
-import { useTranslation } from "../../hooks/useTranslation";
+import {
+  useTranslation,
+  getWeatherDescriptionKey,
+} from "../../hooks/useTranslation";
 import { TrayWidget } from "../widgets/TrayWidget";
 
 interface IslandLayoutProps {
@@ -35,7 +40,23 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
   const settings = useSettingsStore();
   const trayFileCount = useTrayStore((state) => state.files.length);
   const { t } = useTranslation();
-  const willChange = useWillChange();
+  const reduce = useReducedMotion();
+
+  const tabTransition = reduce
+    ? { duration: 0 }
+    : { duration: 0.14, ease: EASE.out };
+
+  const tabInitial = reduce
+    ? { opacity: 1, y: 0, filter: "none" }
+    : { opacity: 0, y: 6, filter: "blur(4px)" };
+
+  const tabExit = reduce
+    ? { opacity: 0, y: 0, filter: "none" }
+    : { opacity: 0, y: -6, filter: "blur(4px)" };
+
+  const modeTransition = reduce
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 300, damping: 30 };
 
   // Determine active tabs based on widget visibility settings
   const hasHomeTab = settings.showMusic || settings.showCalendar;
@@ -83,10 +104,13 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
       {mode === "compact" && (
         <motion.div
           key="compact"
-          initial={{ opacity: 0, filter: "blur(10px)" }}
-          animate={{ opacity: 1, filter: "blur(0px)" }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          style={{ willChange }}
+          initial={
+            reduce
+              ? { opacity: 1, filter: "none" }
+              : { opacity: 0, filter: "blur(4px)" }
+          }
+          animate={{ opacity: 1, filter: "none" }}
+          transition={modeTransition}
           className={
             "absolute inset-0 flex items-center justify-between whitespace-nowrap px-3"
           }
@@ -114,7 +138,11 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 {settings.showMusic && mediaInfo?.is_playing && (
                   <Equalizer isPlaying={true} />
                 )}
-                {settings.showClock && <ClockWidget mode="compact" />}
+                {settings.showClock && (
+                  <ErrorBoundary>
+                    <ClockWidget mode="compact" />
+                  </ErrorBoundary>
+                )}
               </div>
               {settings.rightCornerMode === "custom" &&
               settings.customRightCornerUrl ? (
@@ -129,10 +157,14 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
               ) : (
                 <div className="flex items-center gap-2">
                   {settings.showWeather && (
-                    <WeatherWidget weather={weatherInfo} mode="compact" />
+                    <ErrorBoundary>
+                      <WeatherWidget weather={weatherInfo} mode="compact" />
+                    </ErrorBoundary>
                   )}
                   {settings.showSystem && (
-                    <SystemWidget stats={systemStats} mode="compact" />
+                    <ErrorBoundary>
+                      <SystemWidget stats={systemStats} mode="compact" />
+                    </ErrorBoundary>
                   )}
                 </div>
               )}
@@ -145,24 +177,35 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
       {mode === "preview" && (
         <motion.div
           key="preview"
-          initial={{ opacity: 0, filter: "blur(10px)" }}
-          animate={{ opacity: 1, filter: "blur(0px)" }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          style={{ willChange }}
+          initial={
+            reduce
+              ? { opacity: 1, filter: "none" }
+              : { opacity: 0, filter: "blur(4px)" }
+          }
+          animate={{ opacity: 1, filter: "none" }}
+          transition={modeTransition}
           className="absolute inset-0 flex items-center justify-between px-4 whitespace-nowrap"
         >
           <div className="flex items-center gap-3">
             {settings.showMusic && (
-              <MusicWidget media={mediaInfo} mode="preview" />
+              <ErrorBoundary>
+                <MusicWidget media={mediaInfo} mode="preview" />
+              </ErrorBoundary>
             )}
             {settings.showMusic && mediaInfo?.is_playing && (
               <Equalizer isPlaying={true} />
             )}
           </div>
           <div className="flex items-center gap-3">
-            {settings.showClock && <ClockWidget mode="preview" />}
+            {settings.showClock && (
+              <ErrorBoundary>
+                <ClockWidget mode="preview" />
+              </ErrorBoundary>
+            )}
             {settings.showSystem && (
-              <SystemWidget stats={systemStats} mode="preview" />
+              <ErrorBoundary>
+                <SystemWidget stats={systemStats} mode="preview" />
+              </ErrorBoundary>
             )}
           </div>
         </motion.div>
@@ -172,15 +215,15 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
       {mode === "expanded" && (
         <motion.div
           key="expanded"
-          initial={{ opacity: 0, scale: 0.96 }}
+          initial={
+            reduce ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.96 }
+          }
           animate={{ opacity: 1, scale: 1 }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-            delay: 0.1,
-          }}
-          style={{ willChange }}
+          transition={
+            reduce
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 300, damping: 30, delay: 0.1 }
+          }
           className="absolute inset-0 flex flex-col p-4"
         >
           <div className="flex flex-col h-full">
@@ -305,10 +348,10 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 {activeTab === "home" && hasHomeTab && (
                   <motion.div
                     key="home"
-                    initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
-                    transition={{ duration: 0.14, ease: "easeInOut" }}
+                    initial={tabInitial}
+                    animate={{ opacity: 1, y: 0, filter: "none" }}
+                    exit={tabExit}
+                    transition={tabTransition}
                     className={`grid gap-4 h-full ${
                       settings.showMusic && settings.showCalendar
                         ? "grid-cols-[1.2fr_1fr]"
@@ -318,12 +361,16 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                     {/* Tab 1: Home (Music, Calendar) */}
                     {settings.showMusic && (
                       <div className="flex flex-col min-w-0">
-                        <MusicWidget media={mediaInfo} mode="expanded" />
+                        <ErrorBoundary>
+                          <MusicWidget media={mediaInfo} mode="expanded" />
+                        </ErrorBoundary>
                       </div>
                     )}
                     {settings.showCalendar && (
                       <div className="flex flex-col gap-3 justify-between">
-                        <CalendarWidget mode="expanded" />
+                        <ErrorBoundary>
+                          <CalendarWidget mode="expanded" />
+                        </ErrorBoundary>
                       </div>
                     )}
                   </motion.div>
@@ -332,110 +379,119 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 {activeTab === "system" && hasSystemTab && (
                   <motion.div
                     key="system"
-                    initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
-                    transition={{ duration: 0.14, ease: "easeInOut" }}
+                    initial={tabInitial}
+                    animate={{ opacity: 1, y: 0, filter: "none" }}
+                    exit={tabExit}
+                    transition={tabTransition}
                     className="flex flex-col flex-1 min-h-0 py-1.5 h-full"
                   >
-                    <SystemWidget stats={systemStats} mode="expanded" />
+                    <ErrorBoundary>
+                      <SystemWidget stats={systemStats} mode="expanded" />
+                    </ErrorBoundary>
                   </motion.div>
                 )}
 
                 {activeTab === "weather" && hasWeatherTab && (
-                  <motion.div
-                    key="weather"
-                    initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
-                    transition={{ duration: 0.14, ease: "easeInOut" }}
-                    className="grid grid-cols-[1.1fr_1px_1fr] gap-4 flex-1 min-h-0 py-1.5 px-2 h-full"
-                  >
-                    {/* Left Column: Temperature and status icon */}
-                    <div className="flex items-center gap-4 justify-center">
-                      {weatherInfo ? (
-                        <>
-                          <div className="flex-shrink-0">
-                            {getWeatherIcon(
-                              weatherInfo.weather_code,
-                              weatherInfo.is_day,
-                              "w-12 h-12",
-                            )}
+                  <ErrorBoundary>
+                    <motion.div
+                      key="weather"
+                      initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
+                      animate={{ opacity: 1, y: 0, filter: "none" }}
+                      exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
+                      transition={{ duration: 0.14, ease: "easeInOut" }}
+                      className="grid grid-cols-[1.1fr_1px_1fr] gap-4 flex-1 min-h-0 py-1.5 px-2 h-full"
+                    >
+                      {/* Left Column: Temperature and status icon */}
+                      <div className="flex items-center gap-4 justify-center">
+                        {weatherInfo ? (
+                          <>
+                            <div className="flex-shrink-0">
+                              {getWeatherIcon(
+                                weatherInfo.weather_code,
+                                weatherInfo.is_day,
+                                "w-12 h-12",
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-3xl font-bold text-white tracking-tight leading-none">
+                                {Math.round(weatherInfo.temperature)}°C
+                              </span>
+                              <span className="text-[11px] font-medium text-white/60 mt-1">
+                                {t(
+                                  getWeatherDescriptionKey(
+                                    weatherInfo.weather_code,
+                                  ) as any,
+                                )}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-white/30 text-xs">
+                            {t("layLoadingWeather")}
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-3xl font-bold text-white tracking-tight leading-none">
-                              {Math.round(weatherInfo.temperature)}°C
-                            </span>
-                            <span className="text-[11px] font-medium text-white/60 mt-1">
-                              {weatherInfo.weather_description}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-white/30 text-xs">
-                          {t("layLoadingWeather")}
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
-                    {/* Vertical separator */}
-                    <div className="w-[1px] bg-white/[0.06] h-[90%] self-center" />
+                      {/* Vertical separator */}
+                      <div className="w-[1px] bg-white/[0.06] h-[90%] self-center" />
 
-                    {/* Right Column: Weather stats details */}
-                    <div className="flex flex-col justify-between h-full">
-                      <span className="text-[10px] font-semibold text-white/40 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                        <Compass className="w-3.5 h-3.5 text-white/35" />
-                        {t("layConditionDetails")}
-                      </span>
-                      {weatherInfo ? (
-                        <div className="flex flex-col gap-2 flex-1 justify-center">
-                          <div className="flex justify-between items-center text-[10px] text-white/50 border-b border-white/[0.06] pb-1.5">
-                            <span className="flex items-center gap-1.5">
-                              <Droplets className="w-3.5 h-3.5 text-white/35" />
-                              {t("layHumidity")}
-                            </span>
-                            <span className="text-white/80 font-medium">
-                              {weatherInfo.humidity}%
-                            </span>
+                      {/* Right Column: Weather stats details */}
+                      <div className="flex flex-col justify-between h-full">
+                        <span className="text-[10px] font-semibold text-white/40 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                          <Compass className="w-3.5 h-3.5 text-white/35" />
+                          {t("layConditionDetails")}
+                        </span>
+                        {weatherInfo ? (
+                          <div className="flex flex-col gap-2 flex-1 justify-center">
+                            <div className="flex justify-between items-center text-[10px] text-white/50 border-b border-white/[0.06] pb-1.5">
+                              <span className="flex items-center gap-1.5">
+                                <Droplets className="w-3.5 h-3.5 text-white/35" />
+                                {t("layHumidity")}
+                              </span>
+                              <span className="text-white/80 font-medium">
+                                {weatherInfo.humidity}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] text-white/50 border-b border-white/[0.06] pb-1.5">
+                              <span className="flex items-center gap-1.5">
+                                <Wind className="w-3.5 h-3.5 text-white/35" />
+                                {t("layWindSpeed")}
+                              </span>
+                              <span className="text-white/80 font-medium">
+                                {weatherInfo.wind_speed} km/h
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] text-white/50 pt-0.5">
+                              <span className="text-white/50">
+                                {t("layThermalSensation")}
+                              </span>
+                              <span className="text-white/80 font-medium">
+                                {Math.round(weatherInfo.apparent_temperature)}°
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center text-[10px] text-white/50 border-b border-white/[0.06] pb-1.5">
-                            <span className="flex items-center gap-1.5">
-                              <Wind className="w-3.5 h-3.5 text-white/35" />
-                              {t("layWindSpeed")}
-                            </span>
-                            <span className="text-white/80 font-medium">
-                              {weatherInfo.wind_speed} km/h
-                            </span>
+                        ) : (
+                          <div className="text-white/30 text-xs text-center flex-1 flex items-center justify-center">
+                            --
                           </div>
-                          <div className="flex justify-between items-center text-[10px] text-white/50 pt-0.5">
-                            <span className="text-white/50">
-                              {t("layThermalSensation")}
-                            </span>
-                            <span className="text-white/80 font-medium">
-                              {t("layFeelsLike")}{" "}
-                              {Math.round(weatherInfo.apparent_temperature)}°
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-white/30 text-xs text-center flex-1 flex items-center justify-center">
-                          --
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  </ErrorBoundary>
                 )}
 
                 {activeTab === "tray" && hasTrayTab && (
                   <motion.div
                     key="tray"
-                    initial={{ opacity: 0, y: 6, filter: "blur(3px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -6, filter: "blur(3px)" }}
-                    transition={{ duration: 0.14, ease: "easeInOut" }}
+                    initial={tabInitial}
+                    animate={{ opacity: 1, y: 0, filter: "none" }}
+                    exit={tabExit}
+                    transition={tabTransition}
                     className="flex flex-col flex-1 min-h-0 py-1 h-full"
                   >
-                    <TrayWidget />
+                    <ErrorBoundary>
+                      <TrayWidget />
+                    </ErrorBoundary>
                   </motion.div>
                 )}
               </AnimatePresence>
