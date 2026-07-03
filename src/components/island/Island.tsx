@@ -25,7 +25,10 @@ export function Island() {
       try {
         // Always use the expanded width to prevent horizontal window moving/centering jitter!
         const maxWidth = ISLAND_DIMENSIONS.expanded.width;
-        await setIslandSize(maxWidth + 96, dims.height + 64, customPosition); // padding for shadow
+        // padding for shadow — the OS window stays oversized, but the click-through
+        // hit-region (computed on the Rust side) is shrunk to `dims`, the actual
+        // visible pill, so the transparent padding never blocks clicks elsewhere.
+        await setIslandSize(maxWidth + 96, dims.height + 64, customPosition, dims.width, dims.height);
       } catch {
         // May fail in dev browser mode
       }

@@ -3,6 +3,7 @@ mod mic;
 mod system_info;
 mod weather;
 mod google_calendar;
+mod island_hit_test;
 mod wmi_metrics;
 
 use media::{MediaAction, MediaInfo};
@@ -100,12 +101,25 @@ async fn set_weather_location(
 
 
 /// Resizes the island window and positions it at the top of the screen.
+///
+/// The Tauri window itself is always kept at the (larger) expanded-mode
+/// dimensions to avoid horizontal jitter while morphing between modes, but
+/// that means most of the window is empty/transparent at any given time.
+/// `content_width`/`content_height` describe the actual visible pill for the
+/// current mode (see `ISLAND_DIMENSIONS` on the frontend). We record the
+/// on-screen rectangle they occupy so the click-through watcher (see
+/// `island_hit_test::spawn_watcher`) only lets mouse input reach the window
+/// while the cursor is over that rectangle — everything else in the
+/// oversized transparent window becomes click-through automatically.
 #[tauri::command]
 async fn set_island_size(
     window: tauri::WebviewWindow,
+    registry: tauri::State<'_, Arc<island_hit_test::HitRegionRegistry>>,
     width: f64,
     height: f64,
     position: String,
+    content_width: f64,
+    content_height: f64,
 ) -> Result<(), String> {
     use tauri::LogicalSize;
     window
@@ -132,6 +146,8 @@ async fn set_island_size(
             .set_position(tauri::LogicalPosition::new(x, monitor_logical_y))
             .map_err(|e| e.to_string())?;
     }
+
+    registry.update(&window, width, content_width, content_height);
 
     Ok(())
 }
@@ -505,6 +521,7 @@ pub fn run() {
     let wmi_stats = wmi_metrics::spawn_worker();
     let system_monitor = Arc::new(SystemMonitor::new(Some(wmi_stats)));
     let weather_client = Arc::new(WeatherClient::new());
+    let hit_region_registry = Arc::new(island_hit_test::HitRegionRegistry::new());
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -516,6 +533,7 @@ pub fn run() {
         ))
         .manage(system_monitor.clone())
         .manage(weather_client.clone())
+        .manage(hit_region_registry.clone())
         .invoke_handler(tauri::generate_handler![
             get_system_info,
             get_media_info,
@@ -551,6 +569,9 @@ pub fn run() {
             // Show window after positioning
             let _ = window.show();
 
+            // ── Click-through watcher: keeps the invisible padding around the
+            // island pill from blocking clicks meant for other windows ──
+            island_hit_test::spawn_watcher(app.handle().clone());
 
             // ── Tray Icon ──
             let quit = MenuItem::with_id(app, "quit", "Quit AeroNotch", true, None::<&str>)?;

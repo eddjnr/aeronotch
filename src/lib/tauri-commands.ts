@@ -46,8 +46,10 @@ export async function setIslandSize(
   width: number,
   height: number,
   position: string,
+  contentWidth: number,
+  contentHeight: number,
 ): Promise<void> {
-  return invoke('set_island_size', { width, height, position });
+  return invoke('set_island_size', { width, height, position, contentWidth, contentHeight });
 }
 
 export async function setClickThrough(ignore: boolean): Promise<void> {
