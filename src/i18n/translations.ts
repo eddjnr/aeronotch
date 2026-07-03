@@ -13,29 +13,22 @@ export const translations = {
       "Configure window positioning, transparency, and launch properties.",
     groupAppearance: "Appearance & Placement",
     lblScreenPosition: "Screen Position",
-    descScreenPosition: "Choose which part of the bezel the notch attaches to.",
     posLeft: "Left",
     posCenter: "Center",
     posRight: "Right",
     lblOpacity: "Island Opacity",
-    descOpacity: "Set the translucency level of the island backdrop.",
     lblMonitorPlacement: "Monitor Placement",
-    descMonitorPlacement: "Select which monitor(s) to display AeroNotch on.",
     monitorPrimary: "Primary Monitor Only",
     monitorAll: "All Monitors",
     monitorSpecific: "Monitor {index}",
     groupSystem: "System Preferences",
     lblLaunchStartup: "Launch on Startup",
-    descLaunchStartup:
-      "Start AeroNotch automatically when logging into Windows.",
     lblResetDefaults: "Reset to Defaults",
-    descResetDefaults: "Restore all settings to their original factory values.",
     btnResetSettings: "Reset Settings",
 
     // Language Settings Group
     groupLanguage: "Language & Region",
     lblLanguage: "Language",
-    descLanguage: "Select the display language for AeroNotch.",
     langEn: "English",
     langPtBR: "Português (Brasil)",
 
@@ -45,30 +38,17 @@ export const translations = {
       "Enable or disable individual information layers on the island.",
     groupActiveModules: "Active Modules",
     lblMusicWidget: "Media Player",
-    descMusicWidget:
-      "Shows track name, artist, sound EQ and timeline progress.",
     lblCalendarWidget: "Calendar Grid",
-    descCalendarWidget:
-      "Displays the current week schedule and calendar agenda.",
     lblSystemWidget: "System Monitors",
-    descSystemWidget:
-      "Monitors realtime CPU/RAM load, battery and connection status.",
     lblWeatherWidget: "Weather Details",
-    descWeatherWidget:
-      "Tracks location temperature, warnings and forecast conditions.",
     lblClockWidget: "Digital Clock",
-    descClockWidget: "Sleek top bar system clock visible in compact states.",
     lblTrayWidget: "File Tray",
-    descTrayWidget:
-      "Temporary holding shelf for files to easily copy, rename or open them.",
 
     // Upcoming Extensions
     lblUpcomingExtensions: "Upcoming Extensions",
     lblPlanned: "Planned",
     lblQuickApps: "Quick Apps",
-    descQuickApps: "Dock application launching controls in the island panel.",
     lblTodos: "To-dos & Tasks",
-    descTodos: "Keep track of active checklists directly from the bezel.",
 
     // Integrations Tab
     integrationsTitle: "Integrations",
@@ -195,30 +175,22 @@ export const translations = {
       "Configure o posicionamento da janela, transparência e propriedades de inicialização.",
     groupAppearance: "Aparência e Posicionamento",
     lblScreenPosition: "Posição da Tela",
-    descScreenPosition: "Escolha em qual parte da moldura a ilha se fixa.",
     posLeft: "Esquerda",
     posCenter: "Centro",
     posRight: "Direita",
     lblOpacity: "Opacidade da Ilha",
-    descOpacity: "Defina o nível de translucidez do fundo da ilha.",
     lblMonitorPlacement: "Exibição nos Monitores",
-    descMonitorPlacement: "Selecione em qual(is) monitor(es) o AeroNotch deve ser exibido.",
     monitorPrimary: "Apenas Monitor Principal",
     monitorAll: "Todos os Monitores",
     monitorSpecific: "Monitor {index}",
     groupSystem: "Preferências do Sistema",
     lblLaunchStartup: "Iniciar com o Windows",
-    descLaunchStartup:
-      "Inicia o AeroNotch automaticamente ao fazer logon no Windows.",
     lblResetDefaults: "Restaurar Padrões",
-    descResetDefaults:
-      "Restaura todas as configurações para os valores originais de fábrica.",
     btnResetSettings: "Restaurar",
 
     // Language Settings Group
     groupLanguage: "Idioma e Região",
     lblLanguage: "Idioma",
-    descLanguage: "Selecione o idioma de exibição do AeroNotch.",
     langEn: "English",
     langPtBR: "Português (Brasil)",
 
@@ -228,30 +200,17 @@ export const translations = {
       "Ative ou desative camadas individuais de informação na ilha.",
     groupActiveModules: "Módulos Ativos",
     lblMusicWidget: "Reprodutor de Mídia",
-    descMusicWidget: "Exibe o nome da faixa, artista, equalizador e progresso.",
     lblCalendarWidget: "Grade do Calendário",
-    descCalendarWidget:
-      "Exibe a agenda semanal atual e compromissos do calendário.",
     lblSystemWidget: "Monitores do Sistema",
-    descSystemWidget: "Monitora em tempo real a carga de CPU/RAM.",
     lblWeatherWidget: "Detalhes do Clima",
-    descWeatherWidget:
-      "Acompanha a temperatura do local, alertas e condições previstas.",
     lblClockWidget: "Relógio Digital",
-    descClockWidget:
-      "Relógio elegante na barra superior, visível em estados compactos.",
     lblTrayWidget: "Bandeja de Arquivos",
-    descTrayWidget:
-      "Bandeja para guardar arquivos para copiar, ou abrir rapidamente.",
 
     // Upcoming Extensions
     lblUpcomingExtensions: "Próximas Extensões",
     lblPlanned: "Planejado",
     lblQuickApps: "Apps Rápidos",
-    descQuickApps:
-      "Acople controles de inicialização de aplicativos no painel da ilha.",
     lblTodos: "Tarefas e Afazeres",
-    descTodos: "Acompanhe listas de tarefas ativas diretamente na moldura.",
 
     // Integrations Tab
     integrationsTitle: "Integrações",

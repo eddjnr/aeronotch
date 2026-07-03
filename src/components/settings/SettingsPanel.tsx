@@ -339,13 +339,10 @@ export function SettingsPanel() {
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Screen Position */}
-                  <div className="flex items-center justify-between p-4 bg-white">
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         {t("lblScreenPosition")}
-                      </span>
-                      <span className="text-xs text-[#86868b] mt-0.5">
-                        {t("descScreenPosition")}
                       </span>
                     </div>
                     <div className="flex bg-[#e8e8ea] rounded-lg p-0.5 border border-black/5">
@@ -372,16 +369,13 @@ export function SettingsPanel() {
                   </div>
 
                   {/* Island Opacity */}
-                  <div className="flex items-center justify-between p-4 bg-white">
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         {t("lblOpacity")}
                       </span>
-                      <span className="text-xs text-[#86868b] mt-0.5">
-                        {t("descOpacity")}
-                      </span>
                     </div>
-                    <div className="flex items-center gap-3 w-40">
+                    <div className="flex items-center gap-2 w-40">
                       <input
                         type="range"
                         min="0.5"
@@ -398,13 +392,10 @@ export function SettingsPanel() {
                   </div>
 
                   {/* Monitor Selection */}
-                  <div className="flex items-center justify-between p-4 bg-white">
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         {t("lblMonitorPlacement")}
-                      </span>
-                      <span className="text-xs text-[#86868b] mt-0.5">
-                        {t("descMonitorPlacement")}
                       </span>
                     </div>
                     <Select
@@ -415,20 +406,31 @@ export function SettingsPanel() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white border border-black/5 shadow-md rounded-xl p-1">
-                        <SelectItem value="primary">{t("monitorPrimary")}</SelectItem>
+                        <SelectItem value="primary">
+                          {t("monitorPrimary")}
+                        </SelectItem>
                         <SelectItem value="all">{t("monitorAll")}</SelectItem>
                         {monitors.map((m) => {
-                          let displayName = t("monitorSpecific").replace("{index}", (m.index + 1).toString());
+                          let displayName = t("monitorSpecific").replace(
+                            "{index}",
+                            (m.index + 1).toString(),
+                          );
                           if (m.name) {
                             const match = m.name.match(/DISPLAY(\d+)/i);
                             if (match) {
-                              displayName = t("monitorSpecific").replace("{index}", match[1]);
+                              displayName = t("monitorSpecific").replace(
+                                "{index}",
+                                match[1],
+                              );
                             } else {
                               displayName = m.name;
                             }
                           }
                           return (
-                            <SelectItem key={m.index} value={m.index.toString()}>
+                            <SelectItem
+                              key={m.index}
+                              value={m.index.toString()}
+                            >
                               {`${displayName} (${m.width}x${m.height})`}
                             </SelectItem>
                           );
@@ -446,13 +448,10 @@ export function SettingsPanel() {
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Language Selector */}
-                  <div className="flex items-center justify-between p-4 bg-white">
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         {t("lblLanguage")}
-                      </span>
-                      <span className="text-xs text-[#86868b] mt-0.5">
-                        {t("descLanguage")}
                       </span>
                     </div>
                     <Select
@@ -480,13 +479,10 @@ export function SettingsPanel() {
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Launch on Startup */}
-                  <div className="flex items-center justify-between p-4 bg-white">
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         {t("lblLaunchStartup")}
-                      </span>
-                      <span className="text-xs text-[#86868b] mt-0.5">
-                        {t("descLaunchStartup")}
                       </span>
                     </div>
                     <IOSSwitch
@@ -496,13 +492,10 @@ export function SettingsPanel() {
                   </div>
 
                   {/* Reset Defaults */}
-                  <div className="flex items-center justify-between p-4 bg-white hover:bg-red-50/20 transition-colors">
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white hover:bg-red-50/20 transition-colors">
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-[#1d1d1f]">
                         {t("lblResetDefaults")}
-                      </span>
-                      <span className="text-xs text-[#86868b] mt-0.5">
-                        {t("descResetDefaults")}
                       </span>
                     </div>
                     <button
@@ -544,17 +537,14 @@ export function SettingsPanel() {
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Media Player */}
-                  <div className="flex items-center justify-between p-4 bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#ff2d55] text-white shadow-[0_1px_3px_rgba(255,45,85,0.3)] flex-shrink-0">
-                        <Music className="w-4 h-4" />
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#ff2d55] text-white shadow-[0_1px_3px_rgba(255,45,85,0.3)] flex-shrink-0">
+                        <Music className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           {t("lblMusicWidget")}
-                        </span>
-                        <span className="text-xs text-[#86868b] mt-0.5">
-                          {t("descMusicWidget")}
                         </span>
                       </div>
                     </div>
@@ -565,17 +555,14 @@ export function SettingsPanel() {
                   </div>
 
                   {/* Calendar Grid */}
-                  <div className="flex items-center justify-between p-4 bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#ff9500] text-white shadow-[0_1px_3px_rgba(255,149,0,0.3)] flex-shrink-0">
-                        <Calendar className="w-4 h-4" />
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#ff9500] text-white shadow-[0_1px_3px_rgba(255,149,0,0.3)] flex-shrink-0">
+                        <Calendar className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           {t("lblCalendarWidget")}
-                        </span>
-                        <span className="text-xs text-[#86868b] mt-0.5">
-                          {t("descCalendarWidget")}
                         </span>
                       </div>
                     </div>
@@ -586,17 +573,14 @@ export function SettingsPanel() {
                   </div>
 
                   {/* System Monitors */}
-                  <div className="flex items-center justify-between p-4 bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#34c759] text-white shadow-[0_1px_3px_rgba(52,199,89,0.3)] flex-shrink-0">
-                        <Activity className="w-4 h-4" />
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#34c759] text-white shadow-[0_1px_3px_rgba(52,199,89,0.3)] flex-shrink-0">
+                        <Activity className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           {t("lblSystemWidget")}
-                        </span>
-                        <span className="text-xs text-[#86868b] mt-0.5">
-                          {t("descSystemWidget")}
                         </span>
                       </div>
                     </div>
@@ -607,17 +591,14 @@ export function SettingsPanel() {
                   </div>
 
                   {/* Weather Details */}
-                  <div className="flex items-center justify-between p-4 bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#5ac8fa] text-white shadow-[0_1px_3px_rgba(90,200,250,0.3)] flex-shrink-0">
-                        <Cloud className="w-4 h-4" />
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#5ac8fa] text-white shadow-[0_1px_3px_rgba(90,200,250,0.3)] flex-shrink-0">
+                        <Cloud className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           {t("lblWeatherWidget")}
-                        </span>
-                        <span className="text-xs text-[#86868b] mt-0.5">
-                          {t("descWeatherWidget")}
                         </span>
                       </div>
                     </div>
@@ -628,17 +609,14 @@ export function SettingsPanel() {
                   </div>
 
                   {/* Digital Clock */}
-                  <div className="flex items-center justify-between p-4 bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#5856d6] text-white shadow-[0_1px_3px_rgba(88,86,214,0.3)] flex-shrink-0">
-                        <Clock className="w-4 h-4" />
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#5856d6] text-white shadow-[0_1px_3px_rgba(88,86,214,0.3)] flex-shrink-0">
+                        <Clock className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           {t("lblClockWidget")}
-                        </span>
-                        <span className="text-xs text-[#86868b] mt-0.5">
-                          {t("descClockWidget")}
                         </span>
                       </div>
                     </div>
@@ -649,17 +627,14 @@ export function SettingsPanel() {
                   </div>
 
                   {/* File Tray */}
-                  <div className="flex items-center justify-between p-4 bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#007aff] text-white shadow-[0_1px_3px_rgba(0,122,255,0.3)] flex-shrink-0">
-                        <Folder className="w-4 h-4" />
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#007aff] text-white shadow-[0_1px_3px_rgba(0,122,255,0.3)] flex-shrink-0">
+                        <Folder className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           {t("lblTrayWidget")}
-                        </span>
-                        <span className="text-xs text-[#86868b] mt-0.5">
-                          {t("descTrayWidget")}
                         </span>
                       </div>
                     </div>
@@ -678,41 +653,35 @@ export function SettingsPanel() {
                 </span>
                 <div className="bg-white rounded-xl border border-black/5 divide-y divide-black/5 overflow-hidden opacity-45 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                   {/* Quick Apps */}
-                  <div className="flex items-center justify-between p-4 bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#8e8e93] text-white flex-shrink-0">
-                        <Grid className="w-4 h-4" />
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#8e8e93] text-white flex-shrink-0">
+                        <Grid className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           {t("lblQuickApps")}
                         </span>
-                        <span className="text-xs text-[#86868b] mt-0.5">
-                          {t("descQuickApps")}
-                        </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
+                    <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded select-none">
                       {t("lblPlanned")}
                     </span>
                   </div>
 
                   {/* To-dos */}
-                  <div className="flex items-center justify-between p-4 bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#8e8e93] text-white flex-shrink-0">
-                        <ListTodo className="w-4 h-4" />
+                  <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#8e8e93] text-white flex-shrink-0">
+                        <ListTodo className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-[#1d1d1f]">
                           {t("lblTodos")}
                         </span>
-                        <span className="text-xs text-[#86868b] mt-0.5">
-                          {t("descTodos")}
-                        </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded uppercase tracking-wider select-none">
+                    <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded select-none">
                       {t("lblPlanned")}
                     </span>
                   </div>
