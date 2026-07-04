@@ -10,9 +10,11 @@ import type { IslandMode } from "../../types";
 import { useTrayStore } from "../../stores/tray-store";
 
 export function Island() {
-  const { mode, setMode, setIsDragging, setActiveTab, isDragging } = useIslandStore();
+  const { mode, setMode, setIsDragging, setActiveTab, isDragging } =
+    useIslandStore();
   const position = useSettingsStore((s) => s.position);
   const showTray = useSettingsStore((s) => s.showTray);
+  const monitorPlacement = useSettingsStore((s) => s.monitorPlacement);
   const { addFiles } = useTrayStore();
   const leaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -20,7 +22,7 @@ export function Island() {
 
   // Sync Tauri window size and screen position with island mode
   const updateWindowSize = useCallback(
-    async (targetMode: IslandMode, customPosition = position) => {
+    async (targetMode: IslandMode, customPosition?: string) => {
       const dims = ISLAND_DIMENSIONS[targetMode];
       try {
         // Always use the expanded width to prevent horizontal window moving/centering jitter!
@@ -28,12 +30,20 @@ export function Island() {
         // padding for shadow — the OS window stays oversized, but the click-through
         // hit-region (computed on the Rust side) is shrunk to `dims`, the actual
         // visible pill, so the transparent padding never blocks clicks elsewhere.
-        await setIslandSize(maxWidth + 96, dims.height + 64, customPosition, dims.width, dims.height);
+        const effectivePosition =
+          customPosition ?? useSettingsStore.getState().position;
+        await setIslandSize(
+          maxWidth + 96,
+          dims.height + 64,
+          effectivePosition,
+          dims.width,
+          dims.height,
+        );
       } catch {
         // May fail in dev browser mode
       }
     },
-    [position],
+    [],
   );
 
   // Handle settings changes emitted from the preferences window
@@ -50,10 +60,10 @@ export function Island() {
     };
   }, []);
 
-  // Update window size and coordinates when position changes
+  // Update window size and coordinates when position or monitor changes
   useEffect(() => {
     updateWindowSize(mode);
-  }, [position, updateWindowSize]);
+  }, [position, monitorPlacement, updateWindowSize]);
 
   // Ensure correct size on startup
   useEffect(() => {
@@ -69,12 +79,13 @@ export function Island() {
 
     const setupListener = async () => {
       try {
-        const { getCurrentWebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+        const { getCurrentWebviewWindow } =
+          await import("@tauri-apps/api/webviewWindow");
         const appWindow = getCurrentWebviewWindow();
-        
+
         const removeListener = await appWindow.onDragDropEvent((event) => {
           if (isCleanedUp) return;
-          
+
           const currentMode = useIslandStore.getState().mode;
 
           if (event.payload.type === "enter" || event.payload.type === "over") {
@@ -110,7 +121,14 @@ export function Island() {
       isCleanedUp = true;
       if (unlistenFn) unlistenFn();
     };
-  }, [showTray, setMode, updateWindowSize, setIsDragging, setActiveTab, addFiles]);
+  }, [
+    showTray,
+    setMode,
+    updateWindowSize,
+    setIsDragging,
+    setActiveTab,
+    addFiles,
+  ]);
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
@@ -136,7 +154,10 @@ export function Island() {
       hoverTimeoutRef.current = null;
     }
     // Block auto-collapse if user is actively dragging a file or a dropdown menu is open
-    if (useIslandStore.getState().isDragging || useIslandStore.getState().isDropdownOpen) {
+    if (
+      useIslandStore.getState().isDragging ||
+      useIslandStore.getState().isDropdownOpen
+    ) {
       setIsHovered(false);
       return;
     }

@@ -1,9 +1,9 @@
+mod google_calendar;
+mod island_hit_test;
 mod media;
 mod mic;
 mod system_info;
 mod weather;
-mod google_calendar;
-mod island_hit_test;
 mod wmi_metrics;
 
 use media::{MediaAction, MediaInfo};
@@ -56,30 +56,21 @@ fn toggle_mic_mute() -> Result<MicStatus, String> {
 }
 
 /// Changes the playback position of the current media session (seeking).
+///
+/// After a successful seek, immediately re-fetches and emits the updated
+/// MediaInfo. Without this, the frontend's local progress-bar ticker would
+/// keep interpolating from the pre-seek position — since a seek alone
+/// doesn't change title/is_playing, the periodic background loop wouldn't
+/// otherwise emit an update until the next track change.
 #[tauri::command]
-async fn media_seek(position_seconds: f64) -> Result<(), String> {
-    use windows::Media::Control::GlobalSystemMediaTransportControlsSessionManager;
+async fn media_seek(position_seconds: f64, app_handle: tauri::AppHandle) -> Result<(), String> {
+    media::media_seek(position_seconds).await?;
 
-    let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-        .map_err(|e| e.to_string())?
-        .get()
-        .map_err(|e| e.to_string())?;
-
-    let session = manager.GetCurrentSession().map_err(|e| e.to_string())?;
-    
-    // Convert seconds to ticks (100-nanosecond intervals)
-    let ticks = (position_seconds * 10_000_000.0) as i64;
-    
-    let success = session.TryChangePlaybackPositionAsync(ticks)
-        .map_err(|e| e.to_string())?
-        .get()
-        .map_err(|e| e.to_string())?;
-        
-    if success {
-        Ok(())
-    } else {
-        Err("Seek action was sent but rejected by the media session".to_string())
+    if let Some(media) = MediaInfo::get_current().await {
+        let _ = app_handle.emit("media-changed", &media);
     }
+
+    Ok(())
 }
 
 /// Fetches the current weather (cached for 15 min).
@@ -98,7 +89,6 @@ async fn set_weather_location(
     state.set_location(latitude, longitude);
     Ok(())
 }
-
 
 /// Resizes the island window and positions it at the top of the screen.
 ///
@@ -131,11 +121,11 @@ async fn set_island_size(
         let screen = monitor.size();
         let scale = monitor.scale_factor();
         let logical_screen_w = screen.width as f64 / scale;
-        
+
         let monitor_pos = monitor.position();
         let monitor_logical_x = monitor_pos.x as f64 / scale;
         let monitor_logical_y = monitor_pos.y as f64 / scale;
-        
+
         let x = match position.as_str() {
             "top-left" => monitor_logical_x + 16.0,
             "top-right" => monitor_logical_x + logical_screen_w - width - 16.0,
@@ -165,7 +155,7 @@ struct MonitorInfo {
 async fn get_available_monitors(app_handle: tauri::AppHandle) -> Result<Vec<MonitorInfo>, String> {
     let monitors = app_handle.available_monitors().map_err(|e| e.to_string())?;
     let primary = app_handle.primary_monitor().map_err(|e| e.to_string())?;
-    
+
     let mut list = Vec::new();
     for (i, m) in monitors.iter().enumerate() {
         let is_primary = if let Some(ref p) = primary {
@@ -173,7 +163,7 @@ async fn get_available_monitors(app_handle: tauri::AppHandle) -> Result<Vec<Moni
         } else {
             i == 0
         };
-        
+
         list.push(MonitorInfo {
             index: i,
             name: m.name().map(|s| s.to_string()),
@@ -182,7 +172,7 @@ async fn get_available_monitors(app_handle: tauri::AppHandle) -> Result<Vec<Moni
             is_primary,
         });
     }
-    
+
     Ok(list)
 }
 
@@ -194,40 +184,49 @@ fn position_window_on_monitor(
     let size = window.inner_size().map_err(|e| e.to_string())?;
     let scale = monitor.scale_factor();
     let logical_width = size.width as f64 / scale;
-    let width = if logical_width > 0.0 { logical_width } else { 496.0 };
-    
+    let width = if logical_width > 0.0 {
+        logical_width
+    } else {
+        496.0
+    };
+
     let monitor_size = monitor.size();
     let monitor_pos = monitor.position();
     let logical_screen_w = monitor_size.width as f64 / scale;
-    
+
     let monitor_logical_x = monitor_pos.x as f64 / scale;
     let monitor_logical_y = monitor_pos.y as f64 / scale;
-    
+
     let x = match position_setting {
         "top-left" => monitor_logical_x + 16.0,
         "top-right" => monitor_logical_x + logical_screen_w - width - 16.0,
         _ => monitor_logical_x + (logical_screen_w - width) / 2.0, // center
     };
-    
+
     window
         .set_position(tauri::LogicalPosition::new(x, monitor_logical_y))
         .map_err(|e| e.to_string())?;
-        
+
     Ok(())
 }
 
 #[tauri::command]
-async fn sync_monitor_windows(app_handle: tauri::AppHandle, placement: String) -> Result<(), String> {
+async fn sync_monitor_windows(
+    app_handle: tauri::AppHandle,
+    placement: String,
+) -> Result<(), String> {
     let monitors = app_handle.available_monitors().map_err(|e| e.to_string())?;
-    let main_window = app_handle.get_webview_window("main").ok_or("Main window not found")?;
+    let main_window = app_handle
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
     let position_setting = "top-center"; // Default fallback, set_island_size will override it anyway
-    
+
     if placement == "all" {
         if !monitors.is_empty() {
             let _ = position_window_on_monitor(&main_window, &monitors[0], position_setting);
             let _ = main_window.show();
         }
-        
+
         for i in 1..monitors.len() {
             let label = format!("main_{}", i);
             if let Some(win) = app_handle.get_webview_window(&label) {
@@ -248,12 +247,12 @@ async fn sync_monitor_windows(app_handle: tauri::AppHandle, placement: String) -
                 .visible(false)
                 .build()
                 .map_err(|e| e.to_string())?;
-                
+
                 let _ = position_window_on_monitor(&new_win, &monitors[i], position_setting);
                 let _ = new_win.show();
             }
         }
-        
+
         let mut i = monitors.len();
         loop {
             let label = format!("main_{}", i);
@@ -276,12 +275,12 @@ async fn sync_monitor_windows(app_handle: tauri::AppHandle, placement: String) -
         } else {
             app_handle.primary_monitor().map_err(|e| e.to_string())?
         };
-        
+
         if let Some(monitor) = target_monitor {
             let _ = position_window_on_monitor(&main_window, &monitor, position_setting);
             let _ = main_window.show();
         }
-        
+
         let mut i = 1;
         loop {
             let label = format!("main_{}", i);
@@ -293,7 +292,7 @@ async fn sync_monitor_windows(app_handle: tauri::AppHandle, placement: String) -
             }
         }
     }
-    
+
     Ok(())
 }
 
@@ -354,7 +353,9 @@ async fn disconnect_google_calendar(app_handle: tauri::AppHandle) -> Result<(), 
 }
 
 #[tauri::command]
-async fn get_google_calendar_status(app_handle: tauri::AppHandle) -> Result<serde_json::Value, String> {
+async fn get_google_calendar_status(
+    app_handle: tauri::AppHandle,
+) -> Result<serde_json::Value, String> {
     if let Some(config) = google_calendar::load_config(&app_handle) {
         Ok(serde_json::json!({
             "connected": true,
@@ -387,7 +388,9 @@ fn copy_files_to_clipboard(paths: Vec<String>) -> Result<(), String> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
     use windows::Win32::Foundation::HWND;
-    use windows::Win32::System::DataExchange::{OpenClipboard, EmptyClipboard, SetClipboardData, CloseClipboard};
+    use windows::Win32::System::DataExchange::{
+        CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
+    };
     use windows::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GHND};
     use windows::Win32::UI::Shell::DROPFILES;
 
@@ -427,9 +430,10 @@ fn copy_files_to_clipboard(paths: Vec<String>) -> Result<(), String> {
         // 5. Open and write to clipboard
         OpenClipboard(HWND::default()).map_err(|e| e.to_string())?;
         EmptyClipboard().map_err(|e| e.to_string())?;
-        
+
         // CF_HDROP is format 15
-        SetClipboardData(15, windows::Win32::Foundation::HANDLE(h_global.0)).map_err(|e| e.to_string())?;
+        SetClipboardData(15, windows::Win32::Foundation::HANDLE(h_global.0))
+            .map_err(|e| e.to_string())?;
 
         CloseClipboard().map_err(|e| e.to_string())?;
     }
@@ -522,11 +526,22 @@ pub fn run() {
     let system_monitor = Arc::new(SystemMonitor::new(Some(wmi_stats)));
     let weather_client = Arc::new(WeatherClient::new());
     let hit_region_registry = Arc::new(island_hit_test::HitRegionRegistry::new());
+    let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
+    let shutdown_tx_clone = shutdown_tx.clone();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(if cfg!(debug_assertions) {
+                    log::LevelFilter::Info
+                } else {
+                    log::LevelFilter::Warn
+                })
+                .build(),
+        )
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
@@ -571,7 +586,7 @@ pub fn run() {
 
             // ── Click-through watcher: keeps the invisible padding around the
             // island pill from blocking clicks meant for other windows ──
-            island_hit_test::spawn_watcher(app.handle().clone());
+            island_hit_test::spawn_watcher(app.handle().clone(), shutdown_rx.resubscribe());
 
             // ── Tray Icon ──
             let quit = MenuItem::with_id(app, "quit", "Quit AeroNotch", true, None::<&str>)?;
@@ -586,6 +601,8 @@ pub fn run() {
                 .tooltip("AeroNotch")
                 .on_menu_event(move |app, event| match event.id.as_ref() {
                     "quit" => {
+                        log::info!("[app] Iniciando shutdown graciosamente...");
+                        let _ = shutdown_tx.send(());
                         app.exit(0);
                     }
                     "show" => {
@@ -612,58 +629,151 @@ pub fn run() {
             // ── Background: emit system stats every 3 seconds ──
             let app_handle = app.handle().clone();
             let monitor = system_monitor.clone();
+            let mut shutdown_rx_stats = shutdown_rx.resubscribe();
             tauri::async_runtime::spawn(async move {
+                log::info!("[system] Iniciando tarefa de monitoramento");
                 // Perform WMI GPU detection asynchronously off the main thread
                 monitor.detect_gpu_name();
 
                 loop {
-                    let stats = monitor.get_stats();
-                    let _ = app_handle.emit("system-stats", &stats);
-                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                    tokio::select! {
+                        _ = shutdown_rx_stats.recv() => {
+                            log::info!("[system] Parando tarefa de monitoramento");
+                            break;
+                        }
+                        _ = tokio::time::sleep(std::time::Duration::from_secs(3)) => {
+                            let stats = monitor.get_stats();
+                            let _ = app_handle.emit("system-stats", &stats);
+                        }
+                    }
                 }
             });
 
-            // ── Background: emit media info every 1 second ──
+            // ── Background: emit media info only on real changes ──
+            //
+            // Polls the OS media session every 1s (cheap: local COM calls,
+            // thumbnail reads are cache-hit after the first fetch of a
+            // track), but only pushes the (potentially ~2MB with thumbnail)
+            // payload over IPC to the frontend when something the UI
+            // actually cares about changed:
+            //   - track title changed (new song)
+            //   - play/pause state changed
+            //   - playback position drifted from what we'd expect if it had
+            //     just been playing/paused normally — this catches seeks
+            //     done outside our own UI (media keys, seeking directly in
+            //     Spotify/Chrome, etc). A seek from our own ProgressBar is
+            //     handled separately by media_seek(), which emits directly.
             let app_handle_media = app.handle().clone();
+            let mut shutdown_rx_media = shutdown_rx.resubscribe();
             tauri::async_runtime::spawn(async move {
+                log::info!("[media] Iniciando tarefa de monitoramento de mídia");
                 let mut last_title = String::new();
                 let mut last_is_playing = false;
+                let mut expected_position: Option<f64> = None;
+                let mut last_check = std::time::Instant::now();
+
+                // How much drift (seconds) between expected and actual
+                // position we tolerate before treating it as an external
+                // seek. Generous enough to absorb normal timer jitter and
+                // occasional slow polling ticks, tight enough to catch a
+                // deliberate seek quickly.
+                const DRIFT_TOLERANCE_SECS: f64 = 2.0;
+
                 loop {
-                    if let Some(media) = MediaInfo::get_current().await {
-                        if media.title != last_title || media.is_playing != last_is_playing || media.is_playing {
-                            last_title = media.title.clone();
-                            last_is_playing = media.is_playing;
-                            let _ = app_handle_media.emit("media-changed", &media);
+                    tokio::select! {
+                        _ = shutdown_rx_media.recv() => {
+                            log::info!("[media] Parando tarefa de monitoramento de mídia");
+                            break;
                         }
-                    } else {
-                        if !last_title.is_empty() {
-                            last_title.clear();
-                            last_is_playing = false;
-                            let _ = app_handle_media.emit("media-changed", Option::<MediaInfo>::None);
+                        _ = tokio::time::sleep(std::time::Duration::from_millis(1000)) => {
+                            match MediaInfo::get_current().await {
+                                Some(media) => {
+                                    log::debug!(
+                                        "[media] get_current returned: title={:?} artist={:?} playing={}",
+                                        media.title,
+                                        media.artist,
+                                        media.is_playing
+                                    );
+
+                                    let state_changed =
+                                        media.title != last_title || media.is_playing != last_is_playing;
+
+                                    let drifted = expected_position
+                                        .map(|expected| {
+                                            (media.position_seconds - expected).abs() > DRIFT_TOLERANCE_SECS
+                                        })
+                                        .unwrap_or(false);
+
+                                    if state_changed || drifted {
+                                        last_title = media.title.clone();
+                                        last_is_playing = media.is_playing;
+                                        let _ = app_handle_media.emit("media-changed", &media);
+                                    }
+
+                                    // Recompute what we'd expect the position to be
+                                    // at the next tick, based on this fresh reading.
+                                    let elapsed = last_check.elapsed().as_secs_f64();
+                                    expected_position = Some(if media.is_playing {
+                                        media.position_seconds + elapsed
+                                    } else {
+                                        media.position_seconds
+                                    });
+                                    last_check = std::time::Instant::now();
+                                }
+                                None => {
+                                    log::debug!("[media] get_current returned None");
+                                    if !last_title.is_empty() {
+                                        last_title.clear();
+                                        last_is_playing = false;
+                                        expected_position = None;
+                                        let _ = app_handle_media
+                                            .emit("media-changed", Option::<MediaInfo>::None);
+                                    }
+                                }
+                            }
                         }
                     }
-                    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
                 }
             });
 
             // ── Background: emit mic mute status every 500ms (detects external changes too, e.g. Teams/Zoom or hardware mute keys) ──
             let app_handle_mic = app.handle().clone();
+            let mut shutdown_rx_mic = shutdown_rx.resubscribe();
             tauri::async_runtime::spawn(async move {
+                log::info!("[mic] Iniciando tarefa de monitoramento de microfone");
                 let mut last_status: Option<MicStatus> = None;
                 loop {
-                    let status = mic::get_mic_status();
-                    if last_status != Some(status) {
-                        last_status = Some(status);
-                        let _ = app_handle_mic.emit("mic-status-changed", &status);
+                    tokio::select! {
+                        _ = shutdown_rx_mic.recv() => {
+                            log::info!("[mic] Parando tarefa de monitoramento de microfone");
+                            break;
+                        }
+                        _ = tokio::time::sleep(std::time::Duration::from_millis(500)) => {
+                            let status = tokio::task::spawn_blocking(|| mic::get_mic_status())
+                                .await
+                                .unwrap_or_default();
+
+                            if last_status != Some(status) {
+                                last_status = Some(status);
+                                let _ = app_handle_mic.emit("mic-status-changed", &status);
+                            }
+                        }
                     }
-                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
                 }
             });
 
             // ── Background: emit Google Calendar events every 5 minutes ──
-            google_calendar::start_polling(app.handle().clone());
+            google_calendar::start_polling(app.handle().clone(), shutdown_rx.resubscribe());
 
             Ok(())
+        })
+        .on_window_event(move |window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                if window.label() == "main" {
+                    log::info!("[app] Janela principal fechando, iniciando shutdown");
+                    let _ = shutdown_tx_clone.send(());
+                }
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

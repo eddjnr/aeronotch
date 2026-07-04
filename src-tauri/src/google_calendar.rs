@@ -767,18 +767,27 @@ pub async fn fetch_events(url: &str) -> Result<Vec<CalendarEvent>, String> {
     Ok(events)
 }
 
-pub fn start_polling(app: tauri::AppHandle) {
+pub fn start_polling(app: tauri::AppHandle, mut shutdown_rx: tokio::sync::broadcast::Receiver<()>) {
     tauri::async_runtime::spawn(async move {
+        log::info!("[calendar] Iniciando polling de calendário");
         loop {
-            if let Some(config) = load_config(&app) {
-                if let Ok(events) = fetch_events(&config.url).await {
-                    let payload = serde_json::json!({
-                        "items": events
-                    });
-                    let _ = app.emit("google-calendar-events", &payload);
+            tokio::select! {
+                _ = shutdown_rx.recv() => {
+                    log::info!("[calendar] Parando polling de calendário");
+                    break;
+                }
+                _ = tokio::time::sleep(std::time::Duration::from_secs(900)) => {
+                    if let Some(config) = load_config(&app) {
+                        if let Ok(events) = fetch_events(&config.url).await {
+                            log::debug!("[calendar] Eventos de calendário atualizados");
+                            let payload = serde_json::json!({
+                                "items": events
+                            });
+                            let _ = app.emit("google-calendar-events", &payload);
+                        }
+                    }
                 }
             }
-            tokio::time::sleep(std::time::Duration::from_secs(900)).await;
         }
     });
 }

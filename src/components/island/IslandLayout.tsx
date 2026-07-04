@@ -36,12 +36,33 @@ interface IslandLayoutProps {
 }
 
 export function IslandLayout({ mode }: IslandLayoutProps) {
-  const { mediaInfo, systemStats, weatherInfo, weatherError, micStatus, activeTab, setActiveTab } =
-    useIslandStore();
-  const settings = useSettingsStore();
+  const {
+    mediaInfo,
+    systemStats,
+    weatherInfo,
+    weatherError,
+    micStatus,
+    activeTab,
+    setActiveTab,
+  } = useIslandStore();
+  const showMusic = useSettingsStore((s) => s.showMusic);
+  const showCalendar = useSettingsStore((s) => s.showCalendar);
+  const showSystem = useSettingsStore((s) => s.showSystem);
+  const showWeather = useSettingsStore((s) => s.showWeather);
+  const showTray = useSettingsStore((s) => s.showTray);
+  const showClock = useSettingsStore((s) => s.showClock);
+  const showMic = useSettingsStore((s) => s.showMic);
+  const rightCornerMode = useSettingsStore((s) => s.rightCornerMode);
+  const customRightCornerUrl = useSettingsStore((s) => s.customRightCornerUrl);
   const trayFileCount = useTrayStore((state) => state.files.length);
   const { t } = useTranslation();
   const reduce = useReducedMotion();
+
+  // Determine active tabs based on widget visibility settings
+  const hasHomeTab = showMusic || showCalendar;
+  const hasSystemTab = showSystem;
+  const hasWeatherTab = showWeather;
+  const hasTrayTab = showTray;
 
   const tabTransition = reduce
     ? { duration: 0 }
@@ -59,11 +80,6 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
     ? { duration: 0 }
     : { type: "spring" as const, stiffness: 300, damping: 30 };
 
-  // Determine active tabs based on widget visibility settings
-  const hasHomeTab = settings.showMusic || settings.showCalendar;
-  const hasSystemTab = settings.showSystem;
-  const hasWeatherTab = settings.showWeather;
-  const hasTrayTab = settings.showTray;
   const shouldShowTrayCompactSummary =
     mode === "compact" &&
     activeTab === "tray" &&
@@ -119,7 +135,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
           {shouldShowTrayCompactSummary ? (
             <>
               <div className="flex items-center gap-3">
-                {settings.showMusic && mediaInfo?.is_playing && (
+                {showMusic && mediaInfo?.is_playing && (
                   <Equalizer isPlaying={true} />
                 )}
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
@@ -127,7 +143,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 </div>
               </div>
               <div className="flex items-center gap-2.5 text-white">
-                {settings.showMic && (
+                {showMic && (
                   <ErrorBoundary>
                     <MicWidget micStatus={micStatus} variant="compact" />
                   </ErrorBoundary>
@@ -141,26 +157,25 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
           ) : (
             <>
               <div className="flex items-center gap-3">
-                {settings.showMusic && mediaInfo?.is_playing && (
+                {showMusic && mediaInfo?.is_playing && (
                   <Equalizer isPlaying={true} />
                 )}
-                {settings.showClock && (
+                {showClock && (
                   <ErrorBoundary>
                     <ClockWidget mode="compact" />
                   </ErrorBoundary>
                 )}
               </div>
               <div className="flex items-center gap-2.5">
-                {settings.showMic && (
+                {showMic && (
                   <ErrorBoundary>
                     <MicWidget micStatus={micStatus} variant="compact" />
                   </ErrorBoundary>
                 )}
-                {settings.rightCornerMode === "custom" &&
-                settings.customRightCornerUrl ? (
+                {rightCornerMode === "custom" && customRightCornerUrl ? (
                   <div className="flex items-center gap-2">
                     <img
-                      src={settings.customRightCornerUrl}
+                      src={customRightCornerUrl}
                       alt=""
                       className="h-5 max-w-[60px] object-contain rounded-sm"
                       draggable={false}
@@ -168,12 +183,16 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    {settings.showWeather && (
+                    {showWeather && (
                       <ErrorBoundary>
-                        <WeatherWidget weather={weatherInfo} mode="compact" error={weatherError} />
+                        <WeatherWidget
+                          weather={weatherInfo}
+                          mode="compact"
+                          error={weatherError}
+                        />
                       </ErrorBoundary>
                     )}
-                    {settings.showSystem && (
+                    {showSystem && (
                       <ErrorBoundary>
                         <SystemWidget stats={systemStats} mode="compact" />
                       </ErrorBoundary>
@@ -200,27 +219,27 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
           className="absolute inset-0 flex items-center justify-between px-4 whitespace-nowrap"
         >
           <div className="flex items-center gap-3">
-            {settings.showMusic && (
+            {showMusic && (
               <ErrorBoundary>
                 <MusicWidget media={mediaInfo} mode="preview" />
               </ErrorBoundary>
             )}
-            {settings.showMusic && mediaInfo?.is_playing && (
+            {showMusic && mediaInfo?.is_playing && (
               <Equalizer isPlaying={true} />
             )}
           </div>
           <div className="flex items-center gap-3">
-            {settings.showMic && (
+            {showMic && (
               <ErrorBoundary>
                 <MicWidget micStatus={micStatus} variant="preview" />
               </ErrorBoundary>
             )}
-            {settings.showClock && (
+            {showClock && (
               <ErrorBoundary>
                 <ClockWidget mode="preview" />
               </ErrorBoundary>
             )}
-            {settings.showSystem && (
+            {showSystem && (
               <ErrorBoundary>
                 <SystemWidget stats={systemStats} mode="preview" />
               </ErrorBoundary>
@@ -350,7 +369,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 )}
               </div>
               <div className="flex items-center gap-1 text-white/50 pr-1">
-                {settings.showMic && (
+                {showMic && (
                   <ErrorBoundary>
                     <MicWidget micStatus={micStatus} variant="header" />
                   </ErrorBoundary>
@@ -378,20 +397,20 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                     exit={tabExit}
                     transition={tabTransition}
                     className={`grid gap-4 h-full ${
-                      settings.showMusic && settings.showCalendar
+                      showMusic && showCalendar
                         ? "grid-cols-[1.2fr_1fr]"
                         : "grid-cols-1"
                     }`}
                   >
                     {/* Tab 1: Home (Music, Calendar) */}
-                    {settings.showMusic && (
+                    {showMusic && (
                       <div className="flex flex-col min-w-0">
                         <ErrorBoundary>
                           <MusicWidget media={mediaInfo} mode="expanded" />
                         </ErrorBoundary>
                       </div>
                     )}
-                    {settings.showCalendar && (
+                    {showCalendar && (
                       <div className="flex flex-col gap-3 justify-between">
                         <ErrorBoundary>
                           <CalendarWidget mode="expanded" />

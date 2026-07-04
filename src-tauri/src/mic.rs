@@ -11,27 +11,38 @@ pub struct MicStatus {
     pub has_device: bool,
 }
 
-/// Ensures COM is initialized on the calling thread. Tauri commands (and the
-/// background polling loop) may run on different pooled threads, so this is
-/// called defensively before every Core Audio interaction. Both "already
-/// initialized" (S_FALSE) and "initialized with a different concurrency
-/// model" (RPC_E_CHANGED_MODE) are treated as success since `IMMDeviceEnumerator`
-/// / `IAudioEndpointVolume` do not require a specific apartment type for the
-/// simple property-style calls used here.
+/// Ensures COM is initialized on the calling thread.
+///
+/// Uses `thread_local!` because `tokio::task::spawn_blocking` can run the
+/// closure on any thread-pool thread — each thread must initialise COM for
+/// itself.  A plain `OnceLock` would only initialise the first thread that
+/// happens to call this function, leaving other threads uninitialised.
 fn ensure_com_initialized() {
+    thread_local! {
+        static INITIALIZED: std::cell::Cell<bool> = std::cell::Cell::new(false);
+    }
+    INITIALIZED.with(|init| {
+        if !init.get() {
+            unsafe {
+                let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+            }
+            init.set(true);
+        }
+    });
+}
+
+fn get_enumerator() -> Result<IMMDeviceEnumerator, String> {
+    ensure_com_initialized();
     unsafe {
-        let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+        CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(|e| e.to_string())
     }
 }
 
 /// Obtains the `IAudioEndpointVolume` interface for the default capture (microphone) device.
 fn get_capture_endpoint_volume() -> Result<IAudioEndpointVolume, String> {
-    ensure_com_initialized();
+    let enumerator = get_enumerator()?;
 
     unsafe {
-        let enumerator: IMMDeviceEnumerator =
-            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(|e| e.to_string())?;
-
         let device = enumerator
             .GetDefaultAudioEndpoint(eCapture, eConsole)
             .map_err(|e| e.to_string())?;

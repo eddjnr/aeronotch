@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Island } from './components/island/Island';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { ErrorBoundary } from './components/ui/error-boundary';
@@ -9,23 +8,10 @@ import { useMicStatus } from './hooks/useMicStatus';
 import { useWeatherInfo } from './hooks/useWeatherInfo';
 import { useSettingsStore } from './stores/settings-store';
 import { syncMonitorWindows } from './lib/tauri-commands';
-
-// Resolve window label synchronously on startup using URL parameters or Tauri API
-const params = new URLSearchParams(window.location.search);
-let initialLabel = params.get('window') || 'main';
-
-try {
-  // If we are in Tauri and the webview window label is already resolved, prioritize it
-  const tauriLabel = getCurrentWebviewWindow().label;
-  if (tauriLabel) {
-    initialLabel = tauriLabel;
-  }
-} catch {
-  // Fallback to URL parameter or 'main'
-}
+import { getWindowLabel } from './lib/windowLabel';
 
 function App() {
-  const [windowLabel] = useState<string>(initialLabel);
+  const [windowLabel] = useState<string>(getWindowLabel);
 
   // Initialize data hooks
   useSystemInfo();

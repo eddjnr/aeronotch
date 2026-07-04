@@ -94,7 +94,6 @@ impl WeatherClient {
         match self.client.get("http://ip-api.com/json").send().await {
             Ok(res) => {
                 if let Ok(data) = res.json::<IpApiResponse>().await {
-                    log::info!("[Weather] Location auto-detected via ip-api.com: {}, {}", data.lat, data.lon);
                     return Ok((data.lat, data.lon));
                 }
             }
@@ -105,7 +104,6 @@ impl WeatherClient {
         match self.client.get("https://freeipapi.com/api/json").send().await {
             Ok(res) => {
                 if let Ok(data) = res.json::<FreeIpApiResponse>().await {
-                    log::info!("[Weather] Location auto-detected via freeipapi.com: {}, {}", data.latitude, data.longitude);
                     return Ok((data.latitude, data.longitude));
                 }
             }
@@ -144,7 +142,7 @@ impl WeatherClient {
         let primary_result = self.fetch_from_open_meteo(lat, lon).await;
         match primary_result {
             Ok(weather) => {
-                log::info!(
+                log::debug!(
                     "[Weather] Fetched (Open-Meteo): {}°C, {}",
                     weather.temperature, weather.weather_description
                 );
@@ -158,7 +156,7 @@ impl WeatherClient {
 
         match self.fetch_from_wttr(lat, lon).await {
             Ok(weather) => {
-                log::info!(
+                log::debug!(
                     "[Weather] Fetched (wttr.in fallback): {}°C, {}",
                     weather.temperature, weather.weather_description
                 );

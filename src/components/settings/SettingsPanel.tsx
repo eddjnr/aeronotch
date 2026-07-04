@@ -188,15 +188,16 @@ export function SettingsPanel() {
     );
   };
 
-  const handleMonitorPlacementChange = (val: string) => {
+  const handleMonitorPlacementChange = async (val: string) => {
+    await syncMonitorWindows(val);
     settings.updateSetting("monitorPlacement", val);
     emit("settings-changed", { key: "monitorPlacement", value: val }).catch(
       console.error,
     );
-    syncMonitorWindows(val).catch(console.error);
   };
 
-  const handleResetSettings = () => {
+  const handleResetSettings = async () => {
+    await syncMonitorWindows("primary");
     settings.resetSettings();
     // Emit all defaults to synchronize island in real-time
     const defaults = {
@@ -217,7 +218,6 @@ export function SettingsPanel() {
     Object.entries(defaults).forEach(([key, value]) => {
       emit("settings-changed", { key, value }).catch(console.error);
     });
-    syncMonitorWindows("primary").catch(console.error);
   };
 
   return (

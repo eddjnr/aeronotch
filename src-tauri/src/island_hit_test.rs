@@ -69,7 +69,13 @@ impl HitRegionRegistry {
     /// interactive for `window`, based on the *logical* size of the
     /// (oversized) window and the actual visible pill dimensions for the
     /// current island mode.
-    pub fn update(&self, window: &WebviewWindow, window_width: f64, content_width: f64, content_height: f64) {
+    pub fn update(
+        &self,
+        window: &WebviewWindow,
+        window_width: f64,
+        content_width: f64,
+        content_height: f64,
+    ) {
         let scale = match window.scale_factor() {
             Ok(s) => s,
             Err(_) => return,
@@ -88,8 +94,8 @@ impl HitRegionRegistry {
         let rect = HitRect {
             x: outer_pos.x + (((x_offset - FLARE - MARGIN) * scale).round() as i32),
             y: outer_pos.y + ((-MARGIN * scale).round() as i32),
-            width: (((content_width + 2.0 * FLARE + 2.0 * MARGIN)) * scale).round() as i32,
-            height: (((content_height + 2.0 * MARGIN)) * scale).round() as i32,
+            width: ((content_width + 2.0 * FLARE + 2.0 * MARGIN) * scale).round() as i32,
+            height: ((content_height + 2.0 * MARGIN) * scale).round() as i32,
         };
 
         let mut entries = self.entries.lock().unwrap();
@@ -131,12 +137,23 @@ impl HitRegionRegistry {
 /// Spawns the background task that keeps click-through state in sync with
 /// the cursor position. Cheap: a single `GetCursorPos` call plus a few
 /// rectangle comparisons every 30ms.
-pub fn spawn_watcher(app_handle: AppHandle) {
+pub fn spawn_watcher(app_handle: AppHandle, mut shutdown_rx: tokio::sync::broadcast::Receiver<()>) {
     tauri::async_runtime::spawn(async move {
-        let registry = app_handle.state::<std::sync::Arc<HitRegionRegistry>>().inner().clone();
+        log::info!("[hit_test] Iniciando watcher de click-through");
+        let registry = app_handle
+            .state::<std::sync::Arc<HitRegionRegistry>>()
+            .inner()
+            .clone();
         loop {
-            registry.tick();
-            tokio::time::sleep(Duration::from_millis(30)).await;
+            tokio::select! {
+                _ = shutdown_rx.recv() => {
+                    log::info!("[hit_test] Parando watcher de click-through");
+                    break;
+                }
+                _ = tokio::time::sleep(Duration::from_millis(30)) => {
+                    registry.tick();
+                }
+            }
         }
     });
 }
