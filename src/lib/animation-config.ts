@@ -35,6 +35,5 @@ export const EXPANDED_HEIGHT = 204;
 
 export const ISLAND_DIMENSIONS = {
   compact: { width: 250, height: 36 },
-  preview: { width: 420, height: 52 },
   expanded: { width: 660, height: EXPANDED_HEIGHT },
 } as const;

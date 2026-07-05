@@ -205,49 +205,6 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
         </motion.div>
       )}
 
-      {/* ── Preview Mode ── */}
-      {mode === "preview" && (
-        <motion.div
-          key="preview"
-          initial={
-            reduce
-              ? { opacity: 1, filter: "none" }
-              : { opacity: 0, filter: "blur(4px)" }
-          }
-          animate={{ opacity: 1, filter: "none" }}
-          transition={modeTransition}
-          className="absolute inset-0 flex items-center justify-between px-4 whitespace-nowrap"
-        >
-          <div className="flex items-center gap-3">
-            {showMusic && (
-              <ErrorBoundary>
-                <MusicWidget media={mediaInfo} mode="preview" />
-              </ErrorBoundary>
-            )}
-            {showMusic && mediaInfo?.is_playing && (
-              <Equalizer isPlaying={true} />
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {showMic && (
-              <ErrorBoundary>
-                <MicWidget micStatus={micStatus} variant="preview" />
-              </ErrorBoundary>
-            )}
-            {showClock && (
-              <ErrorBoundary>
-                <ClockWidget mode="preview" />
-              </ErrorBoundary>
-            )}
-            {showSystem && (
-              <ErrorBoundary>
-                <SystemWidget stats={systemStats} mode="preview" />
-              </ErrorBoundary>
-            )}
-          </div>
-        </motion.div>
-      )}
-
       {/* ── Expanded Mode ── */}
       {mode === "expanded" && (
         <motion.div

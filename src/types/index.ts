@@ -44,7 +44,7 @@ export interface WeatherInfo {
   is_day: boolean;
 }
 
-export type IslandMode = 'compact' | 'preview' | 'expanded';
+export type IslandMode = 'compact' | 'expanded';
 
 export type RightCornerMode = 'widgets' | 'custom';
 

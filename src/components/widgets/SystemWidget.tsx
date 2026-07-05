@@ -79,7 +79,7 @@ export function SystemWidget({ stats, mode }: SystemWidgetProps) {
 
   if (!stats) return null;
 
-  if (mode === "compact" || mode === "preview") {
+  if (mode === "compact") {
     return null;
   }
 

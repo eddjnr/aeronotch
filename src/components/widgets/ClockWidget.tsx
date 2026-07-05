@@ -18,7 +18,7 @@ export function ClockWidget({ mode }: ClockWidgetProps) {
   const hours = time.getHours().toString().padStart(2, '0');
   const minutes = time.getMinutes().toString().padStart(2, '0');
 
-  if (mode === 'compact' || mode === 'preview') {
+  if (mode === 'compact') {
     return (
       <div className="flex items-center">
         <span className="text-[12px] font-semibold text-white/95 tracking-tight">

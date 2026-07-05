@@ -46,25 +46,6 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
     return null; // Equalizer is shown separately in compact
   }
 
-  if (mode === "preview") {
-    return (
-      <div className="flex items-center gap-2.5">
-        {media.thumbnail_url && (
-          <img
-            src={media.thumbnail_url}
-            alt={media.title}
-            className="w-8 h-8 rounded-md object-cover"
-          />
-        )}
-        <div className="flex flex-col min-w-0">
-          <span className="text-[11px] font-medium text-white truncate max-w-[120px]">
-            {media.title}
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   // Expanded mode — full player
   return (
     <div className="flex flex-col justify-between h-full w-full py-1.5 px-2 min-w-0">

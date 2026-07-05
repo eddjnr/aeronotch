@@ -9,12 +9,11 @@ import { useTranslation } from "../../hooks/useTranslation";
 interface MicWidgetProps {
   micStatus: MicStatus | null;
   /**
-   * - "compact": tiny icon-only indicator shown in the compact pill (like the Equalizer).
-   * - "preview": icon + short label shown in the hover-preview bar.
+   * - "compact": tiny icon-only indicator shown in the compact pill.
    * - "header": persistent quick-action pill shown in the expanded header, next to Settings,
    *   accessible regardless of which tab is active — this is the "quick mute/unmute for calls" control.
    */
-  variant: "compact" | "preview" | "header";
+  variant: "compact" | "header";
 }
 
 export function MicWidget({ micStatus, variant }: MicWidgetProps) {
@@ -70,31 +69,6 @@ export function MicWidget({ micStatus, variant }: MicWidgetProps) {
             )}
           </motion.div>
         </AnimatePresence>
-      </motion.button>
-    );
-  }
-
-  if (variant === "preview") {
-    return (
-      <motion.button
-        type="button"
-        onClick={handleToggle}
-        whileTap={{ scale: 0.94 }}
-        transition={SPRING.button}
-        className={`flex items-center gap-1.5 px-2 py-1 rounded-full cursor-pointer focus-visible:outline-none transition-colors select-none ${
-          localMuted
-            ? "bg-red-500/15 text-red-400"
-            : "bg-white/[0.06] text-white/85 hover:text-white"
-        }`}
-      >
-        {localMuted ? (
-          <MicOff className="w-3 h-3" />
-        ) : (
-          <Mic className="w-3 h-3" />
-        )}
-        <span className="text-[10px] font-semibold whitespace-nowrap">
-          {localMuted ? t("micMuted") : t("micLive")}
-        </span>
       </motion.button>
     );
   }
