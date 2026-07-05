@@ -1,5 +1,6 @@
 import { useRef, useCallback, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { ISLAND_DIMENSIONS } from "../../lib/animation-config";
 import { setIslandSize } from "../../lib/tauri-commands";
 import { useIslandStore } from "../../stores/island-store";
@@ -8,6 +9,9 @@ import { IslandBackground } from "./IslandBackground";
 import { IslandLayout } from "./IslandLayout";
 import type { IslandMode } from "../../types";
 import { useTrayStore } from "../../stores/tray-store";
+
+const EXPANDED_WINDOW_WIDTH = ISLAND_DIMENSIONS.expanded.width + 96;
+const EXPANDED_WINDOW_HEIGHT = ISLAND_DIMENSIONS.expanded.height + 64;
 
 export function Island() {
   const { mode, setMode, setIsDragging, setActiveTab, isDragging } =
@@ -20,21 +24,17 @@ export function Island() {
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Sync Tauri window size and screen position with island mode
+  // Position the window + update watcher with current pill dimensions.
+  // Window is always at expanded size — never resizes between modes.
   const updateWindowSize = useCallback(
     async (targetMode: IslandMode, customPosition?: string) => {
       const dims = ISLAND_DIMENSIONS[targetMode];
       try {
-        // Always use the expanded width to prevent horizontal window moving/centering jitter!
-        const maxWidth = ISLAND_DIMENSIONS.expanded.width;
-        // padding for shadow — the OS window stays oversized, but the click-through
-        // hit-region (computed on the Rust side) is shrunk to `dims`, the actual
-        // visible pill, so the transparent padding never blocks clicks elsewhere.
         const effectivePosition =
           customPosition ?? useSettingsStore.getState().position;
         await setIslandSize(
-          maxWidth + 96,
-          dims.height + 64,
+          EXPANDED_WINDOW_WIDTH,
+          EXPANDED_WINDOW_HEIGHT,
           effectivePosition,
           dims.width,
           dims.height,
@@ -60,15 +60,27 @@ export function Island() {
     };
   }, []);
 
-  // Update window size and coordinates when position or monitor changes
+  // Re-sync window position when the app regains focus (e.g. after alt-tab
+  // from a fullscreen game that may have shifted the window or changed
+  // monitor resolution).
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    const setup = async () => {
+      unlisten = await getCurrentWebviewWindow().onFocusChanged(({ payload: focused }) => {
+        if (focused) {
+          const currentMode = useIslandStore.getState().mode;
+          updateWindowSize(currentMode);
+        }
+      });
+    };
+    setup();
+    return () => { unlisten?.(); };
+  }, [updateWindowSize]);
+
+  // Update window position + watcher when position or monitor changes
   useEffect(() => {
     updateWindowSize(mode);
   }, [position, monitorPlacement, updateWindowSize]);
-
-  // Ensure correct size on startup
-  useEffect(() => {
-    updateWindowSize("compact");
-  }, [updateWindowSize]);
 
   // Global drag & drop listener at window level to auto-expand compact notch
   useEffect(() => {
@@ -79,8 +91,6 @@ export function Island() {
 
     const setupListener = async () => {
       try {
-        const { getCurrentWebviewWindow } =
-          await import("@tauri-apps/api/webviewWindow");
         const appWindow = getCurrentWebviewWindow();
 
         const removeListener = await appWindow.onDragDropEvent((event) => {
@@ -89,7 +99,6 @@ export function Island() {
           const currentMode = useIslandStore.getState().mode;
 
           if (event.payload.type === "enter" || event.payload.type === "over") {
-            // If dragging files over a compact/preview island, expand it immediately
             if (currentMode !== "expanded") {
               updateWindowSize("expanded");
               setMode("expanded");
@@ -138,10 +147,11 @@ export function Island() {
     }
     if (mode === "compact") {
       hoverTimeoutRef.current = setTimeout(() => {
-        // 1. Instantly expand Tauri window size first so there is space for the animation to grow into
-        updateWindowSize("expanded");
-        // 2. Start the react animation
-        setMode("expanded");
+        // Only expand if still compact when the timeout fires
+        if (useIslandStore.getState().mode === "compact") {
+          updateWindowSize("expanded");
+          setMode("expanded");
+        }
       }, 300);
     }
   }, [mode, setMode, updateWindowSize]);
@@ -153,7 +163,6 @@ export function Island() {
       clearTimeout(hoverTimeoutRef.current);
       hoverTimeoutRef.current = null;
     }
-    // Block auto-collapse if user is actively dragging a file or a dropdown menu is open
     if (
       useIslandStore.getState().isDragging ||
       useIslandStore.getState().isDropdownOpen
@@ -164,13 +173,16 @@ export function Island() {
     if (mode !== "compact") {
       leaveTimeoutRef.current = setTimeout(() => {
         setIsHovered(false);
-        // 1. Start the collapse animation inside the webview (the window remains large)
-        setMode("compact");
+        // Only collapse if mode hasn't changed during the timeout
+        if (useIslandStore.getState().mode !== "compact") {
+          updateWindowSize("compact");
+          setMode("compact");
+        }
       }, 400);
     } else {
       setIsHovered(false);
     }
-  }, [mode, setMode]);
+  }, [mode, setMode, updateWindowSize]);
 
   const handleClick = useCallback(() => {
     if (mode === "expanded") return;
@@ -178,34 +190,28 @@ export function Island() {
     setMode("expanded");
   }, [mode, setMode, updateWindowSize]);
 
-  // Handle when animation settles
-  const handleAnimationComplete = useCallback(() => {
-    // If the animation just finished settling into 'compact' mode, now we can shrink the Tauri window
-    if (mode === "compact") {
-      updateWindowSize("compact");
-    }
-  }, [mode, updateWindowSize]);
-
   // Collapse island when dropdown closes / drag ends and mouse is not hovering
   useEffect(() => {
     if (!isDropdownOpen && !isDragging && !isHovered && mode !== "compact") {
       const timer = setTimeout(() => {
+        updateWindowSize("compact");
         setMode("compact");
       }, 400);
       return () => clearTimeout(timer);
     }
-  }, [isDropdownOpen, isDragging, isHovered, mode, setMode]);
+  }, [isDropdownOpen, isDragging, isHovered, mode, setMode, updateWindowSize]);
 
   // Handle Escape key to collapse
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && mode !== "compact") {
+        updateWindowSize("compact");
         setMode("compact");
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [mode, setMode]);
+  }, [mode, setMode, updateWindowSize]);
 
   // Clean up timeouts on unmount
   useEffect(() => {
@@ -216,21 +222,15 @@ export function Island() {
   }, []);
 
   return (
-    <div
-      className="flex items-start justify-center w-full pt-0"
-      data-tauri-drag-region
-    >
+    <div className="flex items-start justify-center w-full pt-0">
       <div
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         className="select-none relative"
+        data-tauri-drag-region
       >
-        <IslandBackground
-          mode={mode}
-          isHovered={isHovered}
-          onAnimationComplete={handleAnimationComplete}
-        >
+        <IslandBackground mode={mode} isHovered={isHovered}>
           <IslandLayout mode={mode} />
         </IslandBackground>
       </div>
