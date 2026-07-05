@@ -22,9 +22,10 @@ use std::time::Duration;
 
 use tauri::{AppHandle, Manager, WebviewWindow};
 
-/// Flare radius used by the pill's SVG path (see IslandBackground.tsx `R`/`r`):
-/// the shape is drawn slightly wider than `content_width` at the top corners.
-const FLARE: f64 = 16.0;
+/// Width of the corner-ear radial gradient (see IslandBackground.tsx:
+/// the two `w-[12px]` absolute divs). The hit-test rect extends by this
+/// amount on each side so clicks over the visible flare work.
+const FLARE: f64 = 12.0;
 /// Small buffer around the pill's own bounds so hovering near the very edge
 /// still counts as "inside" (avoids flicker at the pixel-perfect boundary).
 /// Kept intentionally tight — anything larger starts blocking clicks on
@@ -53,6 +54,11 @@ struct Entry {
     /// Last `ignore` value actually applied to the OS window, so we only
     /// call `set_ignore_cursor_events` when it needs to change.
     ignoring: bool,
+    /// Cached parameters so we can re-compute the rect if the window moves
+    /// (e.g. after a fullscreen game changes monitor resolution).
+    window_width: f64,
+    content_width: f64,
+    content_height: f64,
 }
 
 #[derive(Default)]
@@ -91,9 +97,10 @@ impl HitRegionRegistry {
         // IslandBackground.tsx.
         let x_offset = (window_width - content_width) / 2.0;
 
+        let y = outer_pos.y + ((-MARGIN * scale).round() as i32);
         let rect = HitRect {
             x: outer_pos.x + (((x_offset - FLARE - MARGIN) * scale).round() as i32),
-            y: outer_pos.y + ((-MARGIN * scale).round() as i32),
+            y: y.max(outer_pos.y),
             width: ((content_width + 2.0 * FLARE + 2.0 * MARGIN) * scale).round() as i32,
             height: ((content_height + 2.0 * MARGIN) * scale).round() as i32,
         };
@@ -101,19 +108,28 @@ impl HitRegionRegistry {
         let mut entries = self.entries.lock().unwrap();
         entries
             .entry(window.label().to_string())
-            .and_modify(|e| e.rect = rect)
+            .and_modify(|e| {
+                e.rect = rect;
+                e.window_width = window_width;
+                e.content_width = content_width;
+                e.content_height = content_height;
+            })
             .or_insert_with(|| Entry {
                 window: window.clone(),
                 rect,
-                // Starts as "not ignoring"; the next tick (≤30ms away)
-                // corrects this based on the real cursor position.
                 ignoring: false,
+                window_width,
+                content_width,
+                content_height,
             });
     }
 
     /// Single `GetCursorPos` syscall + in-place rectangle checks. No heap
     /// allocation, no cloning, one lock acquisition.
-    fn tick(&self) {
+    /// Every ~30th call also re-reads the window's on-screen position so the
+    /// hit rect stays accurate after monitor resolution changes (fullscreen
+    /// games, display reconfig, etc.).
+    fn tick(&self, tick_count: u32) {
         use windows::Win32::Foundation::POINT;
         use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
 
@@ -122,8 +138,25 @@ impl HitRegionRegistry {
             return;
         }
 
+        let refresh = tick_count % 30 == 0;
+
         let mut entries = self.entries.lock().unwrap();
         for entry in entries.values_mut() {
+            if refresh {
+                if let Ok(scale) = entry.window.scale_factor() {
+                    if let Ok(outer_pos) = entry.window.outer_position() {
+                        let x_offset = (entry.window_width - entry.content_width) / 2.0;
+                        let y = outer_pos.y + ((-MARGIN * scale).round() as i32);
+                        entry.rect = HitRect {
+                            x: outer_pos.x + (((x_offset - FLARE - MARGIN) * scale).round() as i32),
+                            y: y.max(outer_pos.y),
+                            width: ((entry.content_width + 2.0 * FLARE + 2.0 * MARGIN) * scale).round() as i32,
+                            height: ((entry.content_height + 2.0 * MARGIN) * scale).round() as i32,
+                        };
+                    }
+                }
+            }
+
             let should_ignore = !entry.rect.contains(point.x, point.y);
             if entry.ignoring != should_ignore {
                 if entry.window.set_ignore_cursor_events(should_ignore).is_ok() {
@@ -144,6 +177,7 @@ pub fn spawn_watcher(app_handle: AppHandle, mut shutdown_rx: tokio::sync::broadc
             .state::<std::sync::Arc<HitRegionRegistry>>()
             .inner()
             .clone();
+        let mut tick_count: u32 = 0;
         loop {
             tokio::select! {
                 _ = shutdown_rx.recv() => {
@@ -151,7 +185,8 @@ pub fn spawn_watcher(app_handle: AppHandle, mut shutdown_rx: tokio::sync::broadc
                     break;
                 }
                 _ = tokio::time::sleep(Duration::from_millis(30)) => {
-                    registry.tick();
+                    registry.tick(tick_count);
+                    tick_count = tick_count.wrapping_add(1);
                 }
             }
         }

@@ -12,6 +12,7 @@ use system_info::{SystemMonitor, SystemStats};
 use weather::{WeatherClient, WeatherInfo};
 
 use std::sync::Arc;
+use std::time::Instant;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager};
@@ -90,17 +91,13 @@ async fn set_weather_location(
     Ok(())
 }
 
-/// Resizes the island window and positions it at the top of the screen.
+/// Positions the island window at the top of the screen and updates the
+/// click-through watcher with the current visible pill dimensions.
 ///
-/// The Tauri window itself is always kept at the (larger) expanded-mode
-/// dimensions to avoid horizontal jitter while morphing between modes, but
-/// that means most of the window is empty/transparent at any given time.
-/// `content_width`/`content_height` describe the actual visible pill for the
-/// current mode (see `ISLAND_DIMENSIONS` on the frontend). We record the
-/// on-screen rectangle they occupy so the click-through watcher (see
-/// `island_hit_test::spawn_watcher`) only lets mouse input reach the window
-/// while the cursor is over that rectangle — everything else in the
-/// oversized transparent window becomes click-through automatically.
+/// The window is always kept at the expanded-mode size — it never resizes
+/// between modes. Only the visual pill inside (animated via CSS/framer-motion
+/// on the frontend) changes size. `content_width`/`content_height` tell the
+/// watcher where the pill is, so the transparent padding stays click-through.
 #[tauri::command]
 async fn set_island_size(
     window: tauri::WebviewWindow,
@@ -112,11 +109,14 @@ async fn set_island_size(
     content_height: f64,
 ) -> Result<(), String> {
     use tauri::LogicalSize;
+
+    // Always keep the window at expanded size — the pill visually morphs
+    // inside via CSS but the OS window never changes dimensions.
     window
         .set_size(LogicalSize::new(width, height))
         .map_err(|e| e.to_string())?;
 
-    // Position horizontally based on user settings, keeping 0px from top (integrated in bezel)
+    // Position horizontally based on user settings, keeping 0px from top
     if let Ok(Some(monitor)) = window.current_monitor() {
         let screen = monitor.size();
         let scale = monitor.scale_factor();
@@ -129,7 +129,7 @@ async fn set_island_size(
         let x = match position.as_str() {
             "top-left" => monitor_logical_x + 16.0,
             "top-right" => monitor_logical_x + logical_screen_w - width - 16.0,
-            _ => monitor_logical_x + (logical_screen_w - width) / 2.0, // center
+            _ => monitor_logical_x + (logical_screen_w - width) / 2.0,
         };
 
         window
@@ -529,6 +529,10 @@ pub fn run() {
     let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
     let shutdown_tx_clone = shutdown_tx.clone();
 
+    // Debounce repeated Focused(true) events — Windows can fire them
+    // twice in rapid succession (e.g. when set_always_on_top is called).
+    let last_focus = Arc::new(std::sync::Mutex::new(Instant::now()));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_positioner::init())
@@ -768,11 +772,26 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(move |window, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
-                if window.label() == "main" {
-                    log::info!("[app] Janela principal fechando, iniciando shutdown");
-                    let _ = shutdown_tx_clone.send(());
+            match event {
+                tauri::WindowEvent::CloseRequested { .. } => {
+                    if window.label() == "main" {
+                        log::info!("[app] Janela principal fechando, iniciando shutdown");
+                        let _ = shutdown_tx_clone.send(());
+                    }
                 }
+                tauri::WindowEvent::Focused(true) => {
+                    if window.label() == "main" {
+                        let mut last = last_focus.lock().unwrap();
+                        if last.elapsed() < std::time::Duration::from_millis(500) {
+                            log::info!("[app] Focus event ignorado (debounce)");
+                            return;
+                        }
+                        *last = Instant::now();
+                        log::info!("[app] Janela recuperou foco, re-afirmando always-on-top");
+                        let _ = window.set_always_on_top(true);
+                    }
+                }
+                _ => {}
             }
         })
         .run(tauri::generate_context!())
