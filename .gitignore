@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# repowise API keys (local)
+.repowise/.env
+.repowise
