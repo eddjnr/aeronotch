@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { LazyMotion, m, domAnimation, useReducedMotion } from "framer-motion";
 import { ISLAND_DIMENSIONS, SPRING } from "../../lib/animation-config";
 import { useSettingsStore } from "../../stores/settings-store";
 import type { IslandMode } from "../../types";
@@ -33,6 +33,7 @@ export function IslandBackground({
     : "drop-shadow(0px 0px 0px rgba(0, 0, 0, 0))";
 
   return (
+    <LazyMotion features={domAnimation}>
     <div className="relative">
       {/* Corner ears — faux flare extending outward at top corners */}
       <svg
@@ -49,7 +50,7 @@ export function IslandBackground({
       >
         <path d="M 12 0 L 0 0 L 0 12 A 12 12 0 0 1 12 0 Z" fill={bgColor} />
       </svg>
-      <motion.div
+      <m.div
         animate={{
           width: dims.width,
           height: dims.height,
@@ -61,7 +62,8 @@ export function IslandBackground({
         style={{ overflow: "hidden" }}
       >
         {children}
-      </motion.div>
+      </m.div>
     </div>
+    </LazyMotion>
   );
 }
