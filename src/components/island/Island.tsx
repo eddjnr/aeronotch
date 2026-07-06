@@ -66,15 +66,19 @@ export function Island() {
   useEffect(() => {
     let unlisten: (() => void) | null = null;
     const setup = async () => {
-      unlisten = await getCurrentWebviewWindow().onFocusChanged(({ payload: focused }) => {
-        if (focused) {
-          const currentMode = useIslandStore.getState().mode;
-          updateWindowSize(currentMode);
-        }
-      });
+      unlisten = await getCurrentWebviewWindow().onFocusChanged(
+        ({ payload: focused }) => {
+          if (focused) {
+            const currentMode = useIslandStore.getState().mode;
+            updateWindowSize(currentMode);
+          }
+        },
+      );
     };
     setup();
-    return () => { unlisten?.(); };
+    return () => {
+      unlisten?.();
+    };
   }, [updateWindowSize]);
 
   // Update window position + watcher when position or monitor changes
