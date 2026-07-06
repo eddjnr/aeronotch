@@ -44,12 +44,13 @@ export interface WeatherInfo {
   is_day: boolean;
 }
 
-export type IslandMode = 'compact' | 'expanded';
+export type IslandMode = "compact" | "expanded";
+export type TabId = "home" | "system" | "weather" | "tray";
 
-export type RightCornerMode = 'widgets' | 'custom';
+export type RightCornerMode = "widgets" | "custom";
 
 export interface IslandSettings {
-  position: 'top-center' | 'top-left' | 'top-right';
+  position: "top-center" | "top-left" | "top-right";
   showMusic: boolean;
   showCalendar: boolean;
   showSystem: boolean;
@@ -58,7 +59,7 @@ export interface IslandSettings {
   showTray: boolean;
   showMic: boolean;
   opacity: number;
-  language: 'en' | 'pt-BR';
+  language: "en" | "pt-BR";
   monitorPlacement: string;
   rightCornerMode: RightCornerMode;
   customRightCornerUrl: string;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { LazyMotion, domAnimation } from "framer-motion";
 import { Island } from './components/island/Island';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { ErrorBoundary } from './components/ui/error-boundary';
@@ -13,13 +14,11 @@ import { getWindowLabel } from './lib/windowLabel';
 function App() {
   const [windowLabel] = useState<string>(getWindowLabel);
 
-  // Initialize data hooks
   useSystemInfo();
   useMediaInfo();
   useMicStatus();
   useWeatherInfo();
 
-  // Sync monitor windows on startup
   useEffect(() => {
     if (windowLabel === 'main') {
       const placement = useSettingsStore.getState().monitorPlacement || 'primary';
@@ -27,22 +26,22 @@ function App() {
     }
   }, [windowLabel]);
 
-  if (windowLabel === 'settings') {
-    return (
-      <ErrorBoundary>
-        <main className="w-full h-full bg-[#ececec] text-[#333333] overflow-hidden select-none font-sans">
-          <SettingsPanel />
-        </main>
-      </ErrorBoundary>
-    );
-  }
-
   return (
-    <main className="w-full h-full bg-transparent overflow-hidden">
-      <ErrorBoundary>
-        <Island />
-      </ErrorBoundary>
-    </main>
+    <LazyMotion features={domAnimation}>
+      {windowLabel === 'settings' ? (
+        <ErrorBoundary>
+          <main className="w-full h-full bg-[#ececec] text-[#333333] overflow-hidden select-none font-sans">
+            <SettingsPanel />
+          </main>
+        </ErrorBoundary>
+      ) : (
+        <main className="w-full h-full bg-transparent overflow-hidden">
+          <ErrorBoundary>
+            <Island />
+          </ErrorBoundary>
+        </main>
+      )}
+    </LazyMotion>
   );
 }
 
