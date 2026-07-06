@@ -6,7 +6,6 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "positioner:default",
     "autostart:default",
     "core:window:allow-start-dragging",
     "core:window:allow-set-ignore-cursor-events",

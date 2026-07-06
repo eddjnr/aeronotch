@@ -10,7 +10,7 @@ pub struct MonitorInfo {
     pub is_primary: bool,
 }
 
-fn calc_position(
+pub fn calc_position(
     monitor: &tauri::Monitor,
     width: f64,
     position: &str,
@@ -99,10 +99,15 @@ pub async fn sync_monitor_windows(
         .ok_or("Main window not found")?;
     let position_setting = "top-center";
 
+    // Logical window width (compact = 756). We always use this instead of
+    // reading outer_size() because the latter returns physical pixels, while
+    // calc_position expects logical coordinates.
+    let window_width = 756.0;
+
     if placement == "all" {
         if !monitors.is_empty() {
             if let Ok(Some(monitor)) = main_window.current_monitor() {
-                let (x, y) = calc_position(&monitor, 496.0, position_setting);
+                let (x, y) = calc_position(&monitor, window_width, position_setting);
                 let _ = main_window.set_position(tauri::LogicalPosition::new(x, y));
             }
             let _ = main_window.show();
@@ -111,7 +116,7 @@ pub async fn sync_monitor_windows(
         for i in 1..monitors.len() {
             let label = format!("main_{}", i);
             if let Some(win) = app_handle.get_webview_window(&label) {
-                let (x, y) = calc_position(&monitors[i], 496.0, position_setting);
+                let (x, y) = calc_position(&monitors[i], window_width, position_setting);
                 let _ = win.set_position(tauri::LogicalPosition::new(x, y));
                 let _ = win.show();
             } else {
@@ -130,7 +135,8 @@ pub async fn sync_monitor_windows(
                 .build()
                 .map_err(|e| e.to_string())?;
 
-                let (x, y) = calc_position(&monitors[i], 496.0, position_setting);
+                // New windows use the default compact width since outer_size isn't available yet.
+                let (x, y) = calc_position(&monitors[i], 756.0, position_setting);
                 let _ = new_win.set_position(tauri::LogicalPosition::new(x, y));
                 let _ = new_win.show();
             }
@@ -160,7 +166,7 @@ pub async fn sync_monitor_windows(
         };
 
         if let Some(monitor) = target_monitor {
-            let (x, y) = calc_position(&monitor, 496.0, position_setting);
+            let (x, y) = calc_position(&monitor, window_width, position_setting);
             let _ = main_window.set_position(tauri::LogicalPosition::new(x, y));
             let _ = main_window.show();
         }

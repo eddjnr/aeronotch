@@ -26,7 +26,6 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -73,8 +72,16 @@ pub fn run() {
             let window = app.get_webview_window("main")
                 .expect("main window must exist at setup");
 
-            use tauri_plugin_positioner::{Position, WindowExt};
-            let _ = window.move_window(Position::TopCenter);
+            // Position and resize BEFORE showing to prevent visual flash
+            // at the OS default position. Using primary_monitor() because
+            // current_monitor() may return None on an invisible window.
+            let _ = window.set_size(tauri::LogicalSize::new(756.0, 268.0));
+            if let Ok(Some(monitor)) = app.primary_monitor() {
+                let (x, y) = commands::window::calc_position(
+                    &monitor, 756.0, "top-center",
+                );
+                let _ = window.set_position(tauri::LogicalPosition::new(x, y));
+            }
             let _ = window.show();
 
             island_hit_test::spawn_watcher(app.handle().clone(), shutdown_rx.resubscribe());
