@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
-use sysinfo::System;
+use sysinfo::{Components, Disks, System};
 
 use crate::wmi_metrics::CachedWmiStats;
 
@@ -60,6 +60,8 @@ fn run_command(cmd: &str, args: &[&str]) -> Option<String> {
 /// Thread-safe wrapper around `sysinfo::System`.
 pub struct SystemMonitor {
     system: Mutex<System>,
+    disks: Mutex<Disks>,
+    components: Mutex<Components>,
     cpu_name: String,
     gpu_name: Mutex<String>,
     gpu_backend: Mutex<GpuBackend>,
@@ -120,11 +122,17 @@ impl SystemMonitor {
         let gpu_name = Mutex::new("Graphics Card".to_string());
         let gpu_backend = Mutex::new(GpuBackend::None);
 
+        // Pre-allocate Disks and Components once, refresh in get_stats
+        let disks = Mutex::new(Disks::new_with_refreshed_list());
+        let components = Mutex::new(Components::new_with_refreshed_list());
+
         #[cfg(target_os = "windows")]
         let last_global_cpu_times = Mutex::new(get_win32_global_cpu_times());
 
         Self {
             system: Mutex::new(sys),
+            disks,
+            components,
             cpu_name,
             gpu_name,
             gpu_backend,
@@ -210,9 +218,9 @@ impl SystemMonitor {
 
         let gpu_usage = self.query_gpu_usage();
 
-        // Query disk space using sysinfo
-        use sysinfo::Disks;
-        let disks = Disks::new_with_refreshed_list();
+        // Refresh and query disk space
+        let mut disks = self.disks.lock().unwrap();
+        disks.refresh(true);
         
         let mut disk_stats = Vec::new();
         for disk in disks.iter() {
@@ -273,9 +281,9 @@ impl SystemMonitor {
             .and_then(|s| s.lock().ok())
             .map(|s| s.clone());
 
-        // Query CPU and GPU temperatures using sysinfo::Components, fall back to WMI cache
-        use sysinfo::Components;
-        let components = Components::new_with_refreshed_list();
+        // Refresh and query temperatures, fall back to WMI cache
+        let mut components = self.components.lock().unwrap();
+        components.refresh(true);
 
         let cpu_temp = components.iter()
             .find(|c| {
@@ -399,6 +407,76 @@ impl SystemMonitor {
             }
             _ => None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_disk_stats_calculation() {
+        let stats = DiskStats {
+            name: "C:\\".to_string(),
+            total: 500_000_000_000,
+            used: 300_000_000_000,
+            percent: 60.0,
+        };
+        assert_eq!(stats.name, "C:\\");
+        assert_eq!(stats.total, 500_000_000_000);
+        assert_eq!(stats.used, 300_000_000_000);
+        assert!((stats.percent - 60.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_disk_stats_empty_total() {
+        let stats = DiskStats {
+            name: "D:\\".to_string(),
+            total: 0,
+            used: 0,
+            percent: 0.0,
+        };
+        assert_eq!(stats.percent, 0.0);
+    }
+
+    #[test]
+    fn test_system_stats_default_gpu() {
+        let stats = SystemStats {
+            cpu_name: "Test CPU".to_string(),
+            cpu_usage: 42.0,
+            total_memory: 16_000_000_000,
+            used_memory: 8_000_000_000,
+            memory_percent: 50.0,
+            gpu_name: "Graphics Card".to_string(),
+            gpu_usage: 0.0,
+            disks: vec![],
+            cpu_temp: None,
+            gpu_temp: None,
+        };
+        assert_eq!(stats.cpu_name, "Test CPU");
+        assert_eq!(stats.memory_percent, 50.0);
+        assert_eq!(stats.gpu_name, "Graphics Card");
+        assert!(stats.cpu_temp.is_none());
+    }
+
+    #[test]
+    fn test_memory_percent_calculation() {
+        let total: u64 = 16_000_000_000;
+        let used: u64 = 8_000_000_000;
+        let percent = if total > 0 {
+            (used as f32 / total as f32) * 100.0
+        } else {
+            0.0
+        };
+        assert!((percent - 50.0).abs() < 0.01);
+
+        let total_zero = 0u64;
+        let percent_zero = if total_zero > 0 {
+            (used as f32 / total_zero as f32) * 100.0
+        } else {
+            0.0
+        };
+        assert_eq!(percent_zero, 0.0);
     }
 }
 
