@@ -2,12 +2,13 @@
  * Centralized animation constants.
  *
  * Uses stiffness/damping springs matching the Dynamic Island reference component.
- * stiffness: 400, damping: 30 — snappy and responsive, like the real thing.
+ * stiffness: 400, damping: 40 — critically damped (no overshoot) so content
+ * inside the island doesn't "tremble" during resize.
  */
 
 /** Spring physics matching the Dynamic Island reference */
 export const stiffness = 400;
-export const damping = 30;
+export const damping = 40;
 
 export const SPRING = {
   /** Main island container resize — snappy spring */
