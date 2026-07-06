@@ -1,5 +1,10 @@
 import { execSync } from 'child_process';
 
+const remoteUrl = exec('git remote get-url origin');
+const repoUrl = remoteUrl
+  .replace(/\.git$/, '')
+  .replace(/^git@([^:]+):/, 'https://$1/');
+
 const CATEGORIES = [
   { types: ['feat'], emoji: '🚀', heading: 'Features' },
   { types: ['fix'], emoji: '🐛', heading: 'Bug Fixes' },
@@ -104,7 +109,7 @@ function buildChangelog(commits, newVersion) {
     lines.push(`### ${category.emoji} ${category.heading}\n`);
     for (const entry of entries) {
       const scope = entry.scope ? `**${entry.scope}:** ` : '';
-      lines.push(`- ${scope}${entry.description} (\`${entry.hash}\`)`);
+      lines.push(`- ${scope}${entry.description} [\`${entry.hash}\`](${repoUrl}/commit/${entry.hash})`);
     }
     lines.push('');
   }
@@ -112,7 +117,7 @@ function buildChangelog(commits, newVersion) {
   if (unknown.length > 0) {
     lines.push(`### 📦 Other`);
     for (const entry of unknown) {
-      lines.push(`- ${entry.description || entry.subject} (\`${entry.hash}\`)`);
+      lines.push(`- ${entry.description || entry.subject} [\`${entry.hash}\`](${repoUrl}/commit/${entry.hash})`);
     }
     lines.push('');
   }
