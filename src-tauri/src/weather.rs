@@ -37,13 +37,17 @@ struct OpenMeteoCurrent {
     is_day: u8,
 }
 
+struct WeatherLocation {
+    latitude: f64,
+    longitude: f64,
+    is_localized: bool,
+}
+
 /// Async weather client with a 15-minute in-memory cache.
 /// Backed by the free Open-Meteo API (no API key required).
 pub struct WeatherClient {
     cache: Mutex<Option<(WeatherInfo, Instant)>>,
-    latitude: Mutex<f64>,
-    longitude: Mutex<f64>,
-    is_localized: Mutex<bool>,
+    location: Mutex<WeatherLocation>,
     client: reqwest::Client,
 }
 
@@ -61,18 +65,22 @@ impl WeatherClient {
         Self {
             cache: Mutex::new(None),
             // Default: São Paulo, Brazil — user can change in settings
-            latitude: Mutex::new(-23.5505),
-            longitude: Mutex::new(-46.6333),
-            is_localized: Mutex::new(false),
+            location: Mutex::new(WeatherLocation {
+                latitude: -23.5505,
+                longitude: -46.6333,
+                is_localized: false,
+            }),
             client,
         }
     }
 
     /// Update the coordinates used for weather lookups and bust the cache.
     pub fn set_location(&self, lat: f64, lon: f64) {
-        *self.latitude.lock().unwrap() = lat;
-        *self.longitude.lock().unwrap() = lon;
-        *self.is_localized.lock().unwrap() = true; // Prevents auto-detect from overwriting manual location
+        let mut loc = self.location.lock().unwrap();
+        loc.latitude = lat;
+        loc.longitude = lon;
+        loc.is_localized = true; // Prevents auto-detect from overwriting manual location
+        drop(loc);
         // Clear cache to force re-fetch with new coords
         *self.cache.lock().unwrap() = None;
     }
@@ -117,16 +125,21 @@ impl WeatherClient {
     /// Fetch current weather, returning a cached value when still fresh.
     pub async fn get_weather(&self) -> Result<WeatherInfo, String> {
         // Try to auto-detect location on the first request if not already localized
-        let should_detect = {
-            !*self.is_localized.lock().unwrap()
-        };
-        if should_detect {
-            if let Ok(loc) = self.auto_detect_location().await {
-                *self.latitude.lock().unwrap() = loc.0;
-                *self.longitude.lock().unwrap() = loc.1;
-                *self.is_localized.lock().unwrap() = true;
+        // Phase 1: auto-detect if needed (lock dropped before .await)
+        if !self.location.lock().unwrap().is_localized {
+            if let Ok(auto) = self.auto_detect_location().await {
+                let mut loc = self.location.lock().unwrap();
+                loc.latitude = auto.0;
+                loc.longitude = auto.1;
+                loc.is_localized = true;
             }
         }
+
+        // Phase 2: grab coordinates
+        let (lat, lon) = {
+            let loc = self.location.lock().unwrap();
+            (loc.latitude, loc.longitude)
+        };
 
         // Check cache (15-minute TTL)
         if let Some((cached, timestamp)) = self.cache.lock().unwrap().as_ref() {
@@ -134,9 +147,6 @@ impl WeatherClient {
                 return Ok(cached.clone());
             }
         }
-
-        let lat = *self.latitude.lock().unwrap();
-        let lon = *self.longitude.lock().unwrap();
 
         // Try primary API (Open-Meteo), fallback to wttr.in on failure
         let primary_result = self.fetch_from_open_meteo(lat, lon).await;
@@ -342,5 +352,83 @@ fn weather_code_to_description(code: u32) -> String {
         95 => "Thunderstorm".to_string(),
         96 | 99 => "Thunderstorm with hail".to_string(),
         _ => "Unknown".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_weather_code_to_description_clear() {
+        assert_eq!(weather_code_to_description(0), "Clear sky");
+    }
+
+    #[test]
+    fn test_weather_code_to_description_overcast() {
+        assert_eq!(weather_code_to_description(3), "Overcast");
+    }
+
+    #[test]
+    fn test_weather_code_to_description_fog() {
+        assert_eq!(weather_code_to_description(45), "Foggy");
+        assert_eq!(weather_code_to_description(48), "Foggy");
+    }
+
+    #[test]
+    fn test_weather_code_to_description_rain() {
+        assert_eq!(weather_code_to_description(61), "Rain");
+        assert_eq!(weather_code_to_description(65), "Rain");
+    }
+
+    #[test]
+    fn test_weather_code_to_description_unknown() {
+        assert_eq!(weather_code_to_description(999), "Unknown");
+    }
+
+    #[test]
+    fn test_yahoo_to_wmo_clear() {
+        assert_eq!(yahoo_weather_code_to_wmo(113), 0);
+    }
+
+    #[test]
+    fn test_yahoo_to_wmo_cloudy() {
+        assert_eq!(yahoo_weather_code_to_wmo(119), 3);
+    }
+
+    #[test]
+    fn test_yahoo_to_wmo_snow() {
+        assert_eq!(yahoo_weather_code_to_wmo(227), 71);
+    }
+
+    #[test]
+    fn test_yahoo_to_wmo_thunderstorm() {
+        assert_eq!(yahoo_weather_code_to_wmo(389), 95);
+    }
+
+    #[test]
+    fn test_yahoo_to_wmo_fallback() {
+        assert_eq!(yahoo_weather_code_to_wmo(0), 0);
+    }
+
+    #[test]
+    fn test_weather_info_default() {
+        let info = WeatherInfo::default();
+        assert_eq!(info.temperature, 0.0);
+        assert_eq!(info.weather_code, 0);
+        assert!(!info.is_day);
+    }
+
+    #[test]
+    fn test_set_location_busts_cache() {
+        let client = WeatherClient::new();
+        // Initially cache should be empty
+        assert!(client.cache.lock().unwrap().is_none());
+        // Set location
+        client.set_location(40.7128, -74.0060);
+        let loc = client.location.lock().unwrap();
+        assert!((loc.latitude - 40.7128).abs() < 0.0001);
+        assert!((loc.longitude - -74.0060).abs() < 0.0001);
+        assert!(loc.is_localized);
     }
 }
