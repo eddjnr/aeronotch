@@ -24,12 +24,12 @@ impl Default for CachedWmiStats {
 }
 
 /// Spawns a dedicated OS thread that owns persistent WMI COM connections.
-pub fn spawn_worker() -> Arc<Mutex<CachedWmiStats>> {
+pub fn spawn_worker(shutdown_rx: tokio::sync::broadcast::Receiver<()>) -> Arc<Mutex<CachedWmiStats>> {
     let stats = Arc::new(Mutex::new(CachedWmiStats::default()));
     let thread_stats = stats.clone();
     std::thread::spawn(move || {
         if let Err(e) = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-            worker_loop(thread_stats);
+            worker_loop(thread_stats, shutdown_rx);
         })) {
             log::error!("WMI worker panicked: {e:?}");
         }
@@ -57,7 +57,7 @@ fn extract_f32(val: &Variant) -> Option<f32> {
     }
 }
 
-fn worker_loop(stats: Arc<Mutex<CachedWmiStats>>) {
+fn worker_loop(stats: Arc<Mutex<CachedWmiStats>>, mut shutdown_rx: tokio::sync::broadcast::Receiver<()>) {
     let com = match COMLibrary::new() {
         Ok(c) => c,
         Err(e) => {
@@ -106,6 +106,11 @@ fn worker_loop(stats: Arc<Mutex<CachedWmiStats>>) {
     let mut temp_consecutive_failures = 0u32;
 
     loop {
+        if shutdown_rx.try_recv().is_ok() {
+            log::info!("WMI worker shutting down");
+            break;
+        }
+
         let gpu_usage = query_gpu_usage(&cimv2);
         if let Ok(mut s) = stats.lock() {
             s.gpu_usage_pct = gpu_usage;
