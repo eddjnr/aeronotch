@@ -17,12 +17,14 @@ use std::time::Duration;
 use tokio::sync::{oneshot, mpsc};
 use std::thread;
 
-// ── Thumbnail LRU Cache ──────────────────────────────────────────
+// ── Thumbnail LRU Cache with TTL ─────────────────────────────────
 
 type CacheKey = (String, String, String);
 
 const MAX_CACHE_ENTRIES: usize = 30;
 const MAX_THUMBNAIL_BYTES: usize = 2_000_000;
+/// Thumbnails older than this are re-fetched on next play of same track.
+const CACHE_TTL: Duration = Duration::from_secs(300);
 
 // Timeouts individuais por operação assíncrona do WinRT.
 // Isso é o que garante que a thread única do worker NUNCA fica presa
@@ -39,9 +41,14 @@ const OP_TIMEOUT_ACTION: Duration = Duration::from_millis(1500);
 // entra aqui, é um estado normal e esperado.
 const MAX_FAILURES_BEFORE_RESET: u32 = 3;
 
-static THUMBNAIL_CACHE: OnceLock<Mutex<LruCache<CacheKey, Option<String>>>> = OnceLock::new();
+struct CachedThumbnail {
+    data: Option<String>,
+    fetched_at: std::time::Instant,
+}
 
-fn get_cache() -> &'static Mutex<LruCache<CacheKey, Option<String>>> {
+static THUMBNAIL_CACHE: OnceLock<Mutex<LruCache<CacheKey, CachedThumbnail>>> = OnceLock::new();
+
+fn get_cache() -> &'static Mutex<LruCache<CacheKey, CachedThumbnail>> {
     THUMBNAIL_CACHE.get_or_init(|| {
         Mutex::new(LruCache::new(NonZeroUsize::new(MAX_CACHE_ENTRIES).unwrap()))
     })
@@ -391,7 +398,9 @@ fn build_media_info(session: &GlobalSystemMediaTransportControlsSession) -> Opti
     let cache_key = (title.clone(), artist.clone(), album.clone());
 
     if let Some(cached) = cache_guard.get(&cache_key) {
-        thumbnail_url = cached.clone();
+        if cached.fetched_at.elapsed() < CACHE_TTL {
+            thumbnail_url = cached.data.clone();
+        }
     }
 
     if thumbnail_url.is_none() && !title.is_empty() {
@@ -413,12 +422,17 @@ fn build_media_info(session: &GlobalSystemMediaTransportControlsSession) -> Opti
                                                 .unwrap_or("image/png".to_string());
                                             let b64 = BASE64_STANDARD.encode(&bytes);
                                             let url = format!("data:{};base64,{}", content_type, b64);
-                                            if url.len() <= MAX_THUMBNAIL_BYTES {
+                                            let cache_data = if url.len() <= MAX_THUMBNAIL_BYTES {
                                                 thumbnail_url = Some(url.clone());
-                                                cache_guard.put(cache_key.clone(), Some(url));
+                                                Some(url)
                                             } else {
                                                 thumbnail_url = Some(url);
-                                            }
+                                                None
+                                            };
+                                            cache_guard.put(cache_key.clone(), CachedThumbnail {
+                                                data: cache_data,
+                                                fetched_at: std::time::Instant::now(),
+                                            });
                                         }
                                     }
                                 }
@@ -429,7 +443,10 @@ fn build_media_info(session: &GlobalSystemMediaTransportControlsSession) -> Opti
             }
         }
         if thumbnail_url.is_none() {
-            cache_guard.put(cache_key, None);
+            cache_guard.put(cache_key, CachedThumbnail {
+                data: None,
+                fetched_at: std::time::Instant::now(),
+            });
         }
     }
 
