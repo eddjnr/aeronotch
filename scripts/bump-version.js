@@ -9,7 +9,7 @@ const rootDir = path.resolve(__dirname, '..');
 const pkgPath = path.join(rootDir, 'package.json');
 const tauriConfPath = path.join(rootDir, 'src-tauri', 'tauri.conf.json');
 const cargoPath = path.join(rootDir, 'src-tauri', 'Cargo.toml');
-const settingsPanelPath = path.join(rootDir, 'src', 'components', 'settings', 'SettingsPanel.tsx');
+const settingsSidebarPath = path.join(rootDir, 'src', 'components', 'settings', 'SettingsSidebar.tsx');
 const translationsPath = path.join(rootDir, 'src', 'i18n', 'translations.ts');
 
 if (!fs.existsSync(pkgPath)) {
@@ -63,8 +63,8 @@ if (fs.existsSync(tauriConfPath)) {
 // Update Cargo.toml
 replaceInFile(cargoPath, `version = "${oldVersion}"`, `version = "${newVersion}"`);
 
-// Update SettingsPanel.tsx
-replaceInFile(settingsPanelPath, `AeroNotch v${oldVersion}`, `AeroNotch v${newVersion}`);
+// Update SettingsSidebar.tsx
+replaceInFile(settingsSidebarPath, `AeroNotch v${oldVersion}`, `AeroNotch v${newVersion}`);
 
 // Update translations.ts (both languages)
 replaceInFile(translationsPath, `Version ${oldVersion}`, `Version ${newVersion}`);
