@@ -35,18 +35,20 @@ export function IslandBackground({
   return (
     <div className="relative">
       {/* Corner ears — faux flare extending outward at top corners */}
-      <div
-        className="absolute top-0 -left-[12px] w-[12px] h-[12px] pointer-events-none z-10"
-        style={{
-          backgroundImage: `radial-gradient(circle at 0% 100%, transparent 12px, ${bgColor} 12px)`,
-        }}
-      />
-      <div
-        className="absolute top-0 -right-[12px] w-[12px] h-[12px] pointer-events-none z-10"
-        style={{
-          backgroundImage: `radial-gradient(circle at 100% 100%, transparent 12px, ${bgColor} 12px)`,
-        }}
-      />
+      <svg
+        width="12"
+        height="12"
+        className="absolute top-0 -left-[12px] pointer-events-none z-10"
+      >
+        <path d="M 0 0 L 12 0 L 12 12 A 12 12 0 0 0 0 0 Z" fill={bgColor} />
+      </svg>
+      <svg
+        width="12"
+        height="12"
+        className="absolute top-0 -right-[12px] pointer-events-none z-10"
+      >
+        <path d="M 12 0 L 0 0 L 0 12 A 12 12 0 0 1 12 0 Z" fill={bgColor} />
+      </svg>
       <motion.div
         animate={{
           width: dims.width,
