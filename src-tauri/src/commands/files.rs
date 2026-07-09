@@ -109,10 +109,37 @@ pub fn rename_file_on_disk(path: String, new_name: String) -> Result<String, Str
 
 #[tauri::command]
 pub fn open_file_on_disk(path: String) -> Result<(), String> {
-    use std::process::Command;
-    Command::new("cmd")
-        .args(["/c", "start", "", &path])
-        .spawn()
-        .map_err(|e| e.to_string())?;
+    use std::os::windows::ffi::OsStrExt;
+    use std::ffi::OsStr;
+    use windows::core::PCWSTR;
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+    let path_wide: Vec<u16> = OsStr::new(&path)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+
+    let operation_wide: Vec<u16> = OsStr::new("open")
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+
+    unsafe {
+        let result = ShellExecuteW(
+            HWND::default(),
+            PCWSTR(operation_wide.as_ptr()),
+            PCWSTR(path_wide.as_ptr()),
+            PCWSTR(std::ptr::null()),
+            PCWSTR(std::ptr::null()),
+            SW_SHOWNORMAL,
+        );
+
+        if result.0 as usize <= 32 {
+            return Err(format!("Failed to open file: ShellExecuteW error code {}", result.0 as usize));
+        }
+    }
+
     Ok(())
 }

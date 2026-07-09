@@ -1,5 +1,4 @@
 import { m } from "framer-motion";
-import { Compass, Wind, Droplets } from "lucide-react";
 import { getWeatherIcon } from "../widgets/WeatherWidget";
 import { ErrorBoundary } from "../ui/error-boundary";
 import {
@@ -8,6 +7,7 @@ import {
 } from "../../hooks/useTranslation";
 import type { WeatherInfo } from "../../types";
 import type { TargetAndTransition, Transition } from "framer-motion";
+import { Drop, Wind22, Temperature } from "reicon-react";
 
 interface WeatherPanelProps {
   weatherInfo: WeatherInfo | null;
@@ -44,7 +44,7 @@ export function WeatherPanel({
                 {getWeatherIcon(
                   weatherInfo.weather_code,
                   weatherInfo.is_day,
-                  "w-12 h-12",
+                  false,
                 )}
               </div>
               <div className="flex flex-col">
@@ -52,11 +52,7 @@ export function WeatherPanel({
                   {Math.round(weatherInfo.temperature)}°C
                 </span>
                 <span className="text-[11px] font-medium text-white/60 mt-1">
-                  {t(
-                    getWeatherDescriptionKey(
-                      weatherInfo.weather_code,
-                    ) as any,
-                  )}
+                  {t(getWeatherDescriptionKey(weatherInfo.weather_code) as any)}
                 </span>
               </div>
             </>
@@ -76,15 +72,11 @@ export function WeatherPanel({
 
         {/* Right Column: Weather stats details */}
         <div className="flex flex-col justify-between h-full">
-          <span className="text-[10px] font-semibold text-white/40 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-            <Compass className="w-3.5 h-3.5 text-white/35" />
-            {t("layConditionDetails")}
-          </span>
           {weatherInfo ? (
             <div className="flex flex-col gap-2 flex-1 justify-center">
               <div className="flex justify-between items-center text-[10px] text-white/50 border-b border-white/[0.06] pb-1.5">
                 <span className="flex items-center gap-1.5">
-                  <Droplets className="w-3.5 h-3.5 text-white/35" />
+                  <Drop size={16} className="text-white/35" />
                   {t("layHumidity")}
                 </span>
                 <span className="text-white/80 font-medium">
@@ -93,7 +85,7 @@ export function WeatherPanel({
               </div>
               <div className="flex justify-between items-center text-[10px] text-white/50 border-b border-white/[0.06] pb-1.5">
                 <span className="flex items-center gap-1.5">
-                  <Wind className="w-3.5 h-3.5 text-white/35" />
+                  <Wind22 size={16} className="text-white/35" />
                   {t("layWindSpeed")}
                 </span>
                 <span className="text-white/80 font-medium">
@@ -101,7 +93,13 @@ export function WeatherPanel({
                 </span>
               </div>
               <div className="flex justify-between items-center text-[10px] text-white/50 pt-0.5">
-                <span className="text-white/50">
+                <span className="flex items-center gap-1.5 text-white/50">
+                  <Temperature
+                    size={16}
+                    className="text-white/35"
+                    weight="Filled"
+                  />
+
                   {t("layThermalSensation")}
                 </span>
                 <span className="text-white/80 font-medium">

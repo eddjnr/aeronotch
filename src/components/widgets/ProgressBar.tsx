@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 interface ProgressBarProps {
   current: number; // seconds
@@ -10,15 +10,20 @@ interface ProgressBarProps {
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export function ProgressBar({ current, total, isPlaying, onSeek }: ProgressBarProps) {
+export function ProgressBar({
+  current,
+  total,
+  isPlaying,
+  onSeek,
+}: ProgressBarProps) {
   const currentRef = useRef(current);
   const startTimeRef = useRef(Date.now());
   const isDraggingRef = useRef(false);
   const dragPosRef = useRef(0);
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
@@ -34,7 +39,8 @@ export function ProgressBar({ current, total, isPlaying, onSeek }: ProgressBarPr
     const progress = total > 0 ? (current / total) * 100 : 0;
     if (barRef.current) barRef.current.style.width = `${progress}%`;
     if (thumbRef.current) thumbRef.current.style.left = `${progress}%`;
-    if (timeTextRef.current) timeTextRef.current.textContent = formatTime(current);
+    if (timeTextRef.current)
+      timeTextRef.current.textContent = formatTime(current);
 
     if (!isPlaying || total === 0) return;
 
@@ -49,7 +55,8 @@ export function ProgressBar({ current, total, isPlaying, onSeek }: ProgressBarPr
       const newProgress = (newPos / total) * 100;
       if (barRef.current) barRef.current.style.width = `${newProgress}%`;
       if (thumbRef.current) thumbRef.current.style.left = `${newProgress}%`;
-      if (timeTextRef.current) timeTextRef.current.textContent = formatTime(newPos);
+      if (timeTextRef.current)
+        timeTextRef.current.textContent = formatTime(newPos);
     }, 100);
 
     return () => clearInterval(interval);
@@ -60,10 +67,10 @@ export function ProgressBar({ current, total, isPlaying, onSeek }: ProgressBarPr
     isDraggingRef.current = true;
 
     // Lock text selection during drag scrubbing gesture
-    document.body.style.userSelect = 'none';
+    document.body.style.userSelect = "none";
 
     // Highlight the thumb knob explicitly during active dragging
-    if (thumbRef.current) thumbRef.current.style.opacity = '1';
+    if (thumbRef.current) thumbRef.current.style.opacity = "1";
 
     const updatePosition = (clientX: number) => {
       if (!containerRef.current) return;
@@ -77,7 +84,8 @@ export function ProgressBar({ current, total, isPlaying, onSeek }: ProgressBarPr
       const newProgress = percent * 100;
       if (barRef.current) barRef.current.style.width = `${newProgress}%`;
       if (thumbRef.current) thumbRef.current.style.left = `${newProgress}%`;
-      if (timeTextRef.current) timeTextRef.current.textContent = formatTime(seekPos);
+      if (timeTextRef.current)
+        timeTextRef.current.textContent = formatTime(seekPos);
     };
 
     // Seek instantly on click position
@@ -89,33 +97,33 @@ export function ProgressBar({ current, total, isPlaying, onSeek }: ProgressBarPr
 
     const handleMouseUp = () => {
       isDraggingRef.current = false;
-      document.body.style.userSelect = '';
-      
-      // Release thumb knob highlight
-      if (thumbRef.current) thumbRef.current.style.opacity = '';
+      document.body.style.userSelect = "";
 
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      // Release thumb knob highlight
+      if (thumbRef.current) thumbRef.current.style.opacity = "";
+
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
 
       if (onSeek) {
         onSeek(dragPosRef.current);
       }
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
   };
 
   const currentProgress = total > 0 ? (current / total) * 100 : 0;
 
   return (
-    <div className="w-full flex items-center gap-2.5 text-[9px] text-white/50 font-mono select-none">
+    <div className="w-full flex items-center gap-2.5 text-[9px] text-white/50 select-none">
       <span ref={timeTextRef} className="w-7 text-left">
         {formatTime(current)}
       </span>
       <div
         ref={containerRef}
-        className="relative flex-1 h-3.5 cursor-pointer group flex items-center"
+        className="relative flex-1 h-3.5 group flex items-center"
         onMouseDown={handleMouseDown}
       >
         {/* Slider Track Container */}

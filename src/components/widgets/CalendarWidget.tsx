@@ -1,9 +1,9 @@
-import { useMemo, useEffect, useState } from 'react';
-import { CalendarCheck } from 'lucide-react';
-import { listen } from '@tauri-apps/api/event';
-import type { IslandMode } from '../../types';
-import { getCalendarEvents } from '../../lib/tauri-commands';
-import { useTranslation } from '../../hooks/useTranslation';
+import { useMemo, useEffect, useState } from "react";
+import { CalendarCheck } from "reicon-react";
+import { listen } from "@tauri-apps/api/event";
+import type { IslandMode } from "../../types";
+import { getCalendarEvents } from "../../lib/tauri-commands";
+import { useTranslation } from "../../hooks/useTranslation";
 
 interface CalendarWidgetProps {
   mode: IslandMode;
@@ -42,7 +42,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
     // 2. Listen to updates
     let unlisten: (() => void) | undefined;
 
-    listen('google-calendar-events', (event: any) => {
+    listen("google-calendar-events", (event: any) => {
       const payload = event.payload;
       if (payload && Array.isArray(payload.items)) {
         setEvents(payload.items);
@@ -59,15 +59,15 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
   const weekData = useMemo(() => {
     const todayRef = new Date();
     const days = [];
-    const locale = language === 'pt-BR' ? 'pt-BR' : 'en-US';
+    const locale = language === "pt-BR" ? "pt-BR" : "en-US";
 
     for (let i = -3; i <= 3; i++) {
       const date = new Date(todayRef);
       date.setDate(todayRef.getDate() + i);
-      
-      let dayName = date.toLocaleDateString(locale, { weekday: 'short' });
+
+      let dayName = date.toLocaleDateString(locale, { weekday: "short" });
       // Clean up trailing dots if any (e.g. "sex." -> "sex")
-      dayName = dayName.replace('.', '');
+      dayName = dayName.replace(".", "");
       // Capitalize first letter
       dayName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
@@ -82,7 +82,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
 
     return {
       days,
-      month: todayRef.toLocaleString(locale, { month: 'short' }),
+      month: todayRef.toLocaleString(locale, { month: "short" }),
       year: todayRef.getFullYear(),
     };
   }, [language]);
@@ -92,8 +92,12 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
     return events.filter((event) => {
       let eventStart: Date;
       if (event.start?.date) {
-        const parts = event.start.date.split('-');
-        eventStart = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const parts = event.start.date.split("-");
+        eventStart = new Date(
+          parseInt(parts[0]),
+          parseInt(parts[1]) - 1,
+          parseInt(parts[2]),
+        );
       } else if (event.start?.dateTime) {
         eventStart = new Date(event.start.dateTime);
       } else {
@@ -104,30 +108,34 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
   }, [events, selectedDate]);
 
   const formatEventTime = (event: any) => {
-    if (event.start?.date) return t('allDay');
-    if (!event.start?.dateTime || !event.end?.dateTime) return '';
+    if (event.start?.date) return t("allDay");
+    if (!event.start?.dateTime || !event.end?.dateTime) return "";
     const start = new Date(event.start.dateTime);
     const end = new Date(event.end.dateTime);
     return `${start.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: false,
     })} - ${end.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: false,
     })}`;
   };
 
-  if (mode !== 'expanded') return null;
+  if (mode !== "expanded") return null;
 
   return (
     <div className="flex flex-col gap-3 h-full justify-between select-none">
       <div className="flex items-center gap-3">
         {/* Month/Year block stuck to the left with background opacity and blur */}
         <div className="flex flex-col items-center justify-center bg-white/[0.06] backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-white/10 shrink-0 select-none min-w-[45px]">
-          <span className="text-[12px] font-bold text-white uppercase tracking-wider leading-none">{weekData.month}</span>
-          <span className="text-[9px] font-semibold text-white/40 leading-none mt-1">{weekData.year}</span>
+          <span className="text-[12px] font-bold text-white uppercase tracking-wider leading-none">
+            {weekData.month}
+          </span>
+          <span className="text-[9px] font-semibold text-white/40 leading-none mt-1">
+            {weekData.year}
+          </span>
         </div>
 
         {/* Week grid (interactive buttons) */}
@@ -138,15 +146,15 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
               <button
                 key={`${day.name}-${day.number}`}
                 onClick={() => setSelectedDate(day.date)}
-                className="flex flex-col items-center gap-1 flex-1 min-w-0 focus:outline-none cursor-pointer group"
+                className="flex flex-col items-center gap-1 flex-1 min-w-0 focus:outline-none group"
               >
                 <span
                   className={`text-[9px] font-semibold tracking-wide transition-colors ${
                     isSelected
-                      ? 'text-[#007aff]'
+                      ? "text-[#007aff]"
                       : day.isToday
-                      ? 'text-white'
-                      : 'text-white/40 group-hover:text-white/60'
+                        ? "text-white"
+                        : "text-white/40 group-hover:text-white/60"
                   }`}
                 >
                   {day.name}
@@ -154,10 +162,10 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
                 <div
                   className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold transition-all duration-150 ${
                     isSelected
-                      ? 'bg-[#007aff] text-white shadow-[0_2px_8px_rgba(0,122,255,0.4)]'
+                      ? "bg-[#007aff] text-white shadow-[0_2px_8px_rgba(0,122,255,0.4)]"
                       : day.isToday
-                      ? 'bg-white/10 border border-white/20 text-white'
-                      : 'text-white/75 hover:bg-white/10'
+                        ? "bg-white/10 border border-white/20 text-white"
+                        : "text-white/75 hover:bg-white/10"
                   }`}
                 >
                   {day.number}
@@ -192,17 +200,20 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
         <div
           className="flex flex-col gap-2 mt-1 border-t border-white/5 pt-2 h-[72px] overflow-y-auto pr-1"
           style={{
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'rgba(255, 255, 255, 0.12) transparent',
+            scrollbarWidth: "thin",
+            scrollbarColor: "rgba(255, 255, 255, 0.12) transparent",
           }}
         >
           {filteredEvents.length > 0 ? (
             filteredEvents.map((event) => (
-              <div key={event.id} className="flex items-center justify-between gap-3 text-[11px] text-white/90">
+              <div
+                key={event.id}
+                className="flex items-center justify-between gap-3 text-[11px] text-white/90"
+              >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="w-0.5 h-3 rounded-full bg-[#007aff] flex-shrink-0" />
                   <span className="truncate font-semibold text-white/95">
-                    {event.summary || t('noTitle')}
+                    {event.summary || t("noTitle")}
                   </span>
                 </div>
                 <span className="text-[10.5px] text-white/60 font-sans font-medium flex-shrink-0 tabular-nums">
@@ -213,7 +224,7 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
           ) : (
             <div className="flex items-center gap-2 text-[10px] text-white/45 py-2">
               <CalendarCheck className="w-3.5 h-3.5 text-white/25" />
-              <span className="font-medium">{t('noEvents')}</span>
+              <span className="font-medium">{t("noEvents")}</span>
             </div>
           )}
         </div>

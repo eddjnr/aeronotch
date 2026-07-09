@@ -6,7 +6,6 @@ import { CalendarWidget } from "../widgets/CalendarWidget";
 import { SystemWidget } from "../widgets/SystemWidget";
 import { MicWidget } from "../widgets/MicWidget";
 import { TrayWidget } from "../widgets/TrayWidget";
-import { Settings } from "lucide-react";
 import { useIslandStore } from "../../stores/island-store";
 import { useSettingsStore } from "../../stores/settings-store";
 import { useTrayStore } from "../../stores/tray-store";
@@ -16,6 +15,7 @@ import { useTabFallback } from "../../hooks/useTabFallback";
 import { TabBar } from "./TabBar";
 import { CompactContent } from "./CompactContent";
 import { WeatherPanel } from "./WeatherPanel";
+import { Setting22 } from "reicon-react";
 
 interface IslandLayoutProps {
   mode: IslandMode;
@@ -48,9 +48,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
   const hasWeatherTab = showWeather;
   const hasTrayTab = showTray;
 
-  const tabTransition = reduce
-    ? { duration: 0 }
-    : TAB_ANIMATION.transition;
+  const tabTransition = reduce ? { duration: 0 } : TAB_ANIMATION.transition;
   const tabInitial = reduce
     ? { opacity: 1, y: 0, filter: "none" }
     : TAB_ANIMATION.initial;
@@ -58,9 +56,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
     ? { opacity: 0, y: 0, filter: "none" }
     : TAB_ANIMATION.exit;
 
-  const modeTransition = reduce
-    ? { duration: 0 }
-    : MODE_TRANSITION;
+  const modeTransition = reduce ? { duration: 0 } : MODE_TRANSITION;
 
   const shouldShowTrayCompactSummary =
     mode === "compact" &&
@@ -111,9 +107,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
           }
           animate={{ opacity: 1, scale: 1 }}
           transition={
-            reduce
-              ? { duration: 0 }
-              : { ...MODE_TRANSITION, delay: 0.1 }
+            reduce ? { duration: 0 } : { ...MODE_TRANSITION, delay: 0.1 }
           }
           className="absolute inset-0 flex flex-col p-4"
         >
@@ -139,9 +133,9 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                   onClick={() => openSettingsWindow()}
                   whileTap={{ scale: 0.9 }}
                   transition={{ type: "spring", duration: 0.15, bounce: 0 }}
-                  className="hover:text-white transition-colors cursor-pointer focus:outline-none p-1.5 rounded-full hover:bg-white/[0.04]"
+                  className="hover:text-white transition-colors focus:outline-none p-1.5 rounded-full hover:bg-white/[0.04]"
                 >
-                  <Settings className="w-3.5 h-3.5" />
+                  <Setting22 size={14} />
                 </m.button>
               </div>
             </div>

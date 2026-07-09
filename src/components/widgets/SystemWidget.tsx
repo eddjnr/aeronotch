@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Cpu, MemoryStick, Zap, HardDrive } from "lucide-react";
 import type { SystemStats, IslandMode } from "../../types";
 import { useTranslation } from "../../hooks/useTranslation";
+import { Cpu, HalfDottedCirclePlay, HardDrive, Ram22 } from "reicon-react";
 
 interface SystemWidgetProps {
   stats: SystemStats | null;
@@ -96,10 +96,14 @@ export function SystemWidget({ stats, mode }: SystemWidgetProps) {
             cpu: { label: "CPU", icon: Cpu, value: stats.cpu_usage },
             ram: {
               label: "RAM",
-              icon: MemoryStick,
+              icon: Ram22,
               value: stats.memory_percent,
             },
-            gpu: { label: "GPU", icon: Zap, value: stats.gpu_usage },
+            gpu: {
+              label: "GPU",
+              icon: HalfDottedCirclePlay,
+              value: stats.gpu_usage,
+            },
             storage: {
               label: "DISK",
               icon: HardDrive,
@@ -113,7 +117,7 @@ export function SystemWidget({ stats, mode }: SystemWidgetProps) {
             <button
               key={tab}
               onClick={() => setActiveSubTab(tab)}
-              className={`relative flex items-center justify-between px-2.5 py-1.5 rounded-[10px] text-[10px] font-semibold transition-all duration-200 cursor-pointer focus:outline-none select-none z-10 group ${
+              className={`relative flex items-center justify-between px-2.5 py-1.5 rounded-[10px] text-[10px] font-semibold transition-all duration-200 focus:outline-none select-none z-10 group ${
                 isActive
                   ? "text-white font-bold"
                   : "text-white/45 hover:text-white/60"
@@ -130,6 +134,7 @@ export function SystemWidget({ stats, mode }: SystemWidgetProps) {
                 <Icon
                   className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-105"
                   style={{ color: isActive ? "#0a84ff" : undefined }}
+                  weight="Filled"
                 />
                 {config.label}
               </span>
@@ -176,7 +181,7 @@ export function SystemWidget({ stats, mode }: SystemWidgetProps) {
                           used: formatDiskGB(disk.used),
                           total: formatDiskGB(disk.total),
                           free: formatDiskGB(disk.total - disk.used),
-                          percent: disk.percent.toFixed(0)
+                          percent: disk.percent.toFixed(0),
                         })}
                       </span>
                     </div>

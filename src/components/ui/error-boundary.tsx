@@ -13,7 +13,10 @@ interface ErrorBoundaryState {
   errorInfo: ErrorInfo | null;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   state: ErrorBoundaryState = { error: null, errorInfo: null };
 
   static getDerivedStateFromError(error: Error) {
@@ -28,9 +31,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidUpdate(prevProps: ErrorBoundaryProps) {
     if (this.state.error && this.props.resetKeys) {
-      if (
-        prevProps.resetKeys?.some((k, i) => k !== this.props.resetKeys![i])
-      ) {
+      if (prevProps.resetKeys?.some((k, i) => k !== this.props.resetKeys![i])) {
         this.reset();
       }
     }
@@ -54,7 +55,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       <div
         className={cn(
           "flex flex-col items-center justify-center gap-2 p-4",
-          "text-white/50 text-xs text-center"
+          "text-white/50 text-xs text-center",
         )}
       >
         <div className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center">
@@ -77,7 +78,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <button
           type="button"
           onClick={this.reset}
-          className="text-white/30 hover:text-white/60 transition-colors underline cursor-pointer"
+          className="text-white/30 hover:text-white/60 transition-colors underline"
         >
           Try again
         </button>

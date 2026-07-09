@@ -5,8 +5,13 @@ import { MicWidget } from "../widgets/MicWidget";
 import { WeatherWidget } from "../widgets/WeatherWidget";
 import { SystemWidget } from "../widgets/SystemWidget";
 import { ErrorBoundary } from "../ui/error-boundary";
-import { Folder, File } from "lucide-react";
-import type { MediaInfo, MicStatus, WeatherInfo, SystemStats } from "../../types";
+import { Folder, FileMinus } from "reicon-react";
+import type {
+  MediaInfo,
+  MicStatus,
+  WeatherInfo,
+  SystemStats,
+} from "../../types";
 import type { RightCornerMode } from "../../types";
 
 interface CompactContentProps {
@@ -64,8 +69,12 @@ export function CompactContent({
             {showMusic && mediaInfo?.is_playing && (
               <Equalizer isPlaying={true} />
             )}
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
-              <Folder className="h-3 w-3 text-white" strokeWidth={2.4} />
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
+              <Folder
+                className="h-3 w-3 text-white"
+                strokeWidth={2.4}
+                weight="Filled"
+              />
             </div>
           </div>
           <div className="flex items-center gap-2.5 text-white">
@@ -74,10 +83,12 @@ export function CompactContent({
                 <MicWidget micStatus={micStatus} variant="compact" />
               </ErrorBoundary>
             )}
-            <span className="min-w-[0.75rem] text-right text-[11px] font-bold leading-none tabular-nums">
-              {trayCompactCount}
-            </span>
-            <File className="h-3.5 w-3.5" strokeWidth={2.35} />
+            <div className="flex items-center gap-1.5 border-l border-white/10 pl-1.5 text-white/80">
+              <span className="min-w-[0.75rem] text-right text-[11px] font-bold leading-none tabular-nums">
+                {trayCompactCount}
+              </span>
+              <FileMinus className="h-3.5 w-3.5" strokeWidth={2.35} />
+            </div>
           </div>
         </>
       ) : (

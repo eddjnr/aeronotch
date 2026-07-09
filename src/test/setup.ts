@@ -4,6 +4,16 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
+vi.mock("@tauri-apps/api/webviewWindow", () => ({
+  getCurrentWebviewWindow: vi.fn(() => ({
+    label: "main",
+    show: vi.fn().mockResolvedValue(undefined),
+    setFocus: vi.fn().mockResolvedValue(undefined),
+    setSize: vi.fn().mockResolvedValue(undefined),
+    setAlwaysOnTop: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 vi.mock("@tauri-apps/plugin-opener", () => ({
   openUrl: vi.fn(),
 }));

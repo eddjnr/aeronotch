@@ -23,7 +23,5 @@ pub async fn open_settings_window(app_handle: tauri::AppHandle) -> Result<(), St
     .map_err(|e| e.to_string())?;
 
     let _ = settings_window.center();
-    let _ = settings_window.show();
-    let _ = settings_window.set_focus();
     Ok(())
 }

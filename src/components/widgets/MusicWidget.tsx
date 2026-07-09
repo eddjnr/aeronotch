@@ -1,18 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  SkipBack,
-  Play,
-  Pause,
-  SkipForward,
-  Music,
-} from "lucide-react";
+import { Music } from "reicon-react";
 import { SPRING } from "../../lib/animation-config";
 import { mediaControl, mediaSeek } from "../../lib/tauri-commands";
 import { ProgressBar } from "./ProgressBar";
 import { Equalizer } from "../island/Equalizer";
 import type { MediaInfo, IslandMode } from "../../types";
 import { useTranslation } from "../../hooks/useTranslation";
+import { Next2, Previous2, PlayCircle, PauseCircle } from "reicon-react";
 
 interface MusicWidgetProps {
   media: MediaInfo | null;
@@ -103,14 +98,17 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
       </div>
 
       {/* Bottom Section: Controls (Prev, Play/Pause, Next) */}
-      <div className="flex items-center justify-center gap-8 w-full select-none">
-        <button
+      <div className="flex items-center justify-center gap-5 w-full select-none">
+        <motion.button
           type="button"
           onClick={() => mediaControl("Previous")}
-          className="text-white/60 hover:text-white transition-colors cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={SPRING.button}
+          className="text-white/60 hover:text-white transition-colors p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
         >
-          <SkipBack className="w-4 h-4" fill="currentColor" />
-        </button>
+          <Previous2 size={24} fill="currentColor" weight="Filled" />
+        </motion.button>
 
         <motion.button
           type="button"
@@ -122,44 +120,48 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
               setLocalIsPlaying(!nextState);
             });
           }}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.95 }}
           transition={SPRING.button}
-          className="text-white cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 flex items-center justify-center w-8 h-8"
+          className="text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50 flex items-center justify-center w-10 h-10 relative rounded-full"
         >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={localIsPlaying ? "pause" : "play"}
-              initial={{
-                opacity: 0,
-                scale: 0.6,
-                rotate: localIsPlaying ? -30 : 30,
-              }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{
-                opacity: 0,
-                scale: 0.6,
-                rotate: localIsPlaying ? 30 : -30,
-              }}
-              transition={{ duration: 0.12, ease: "easeOut" }}
-              className="flex items-center justify-center"
-            >
-              {localIsPlaying ? (
-                <Pause className="w-6 h-6" fill="currentColor" />
-              ) : (
-                <Play className="w-6 h-6" fill="currentColor" />
-              )}
-            </motion.div>
+          <AnimatePresence initial={false}>
+            {localIsPlaying ? (
+              <motion.div
+                key="pause"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <PauseCircle size={40} fill="currentColor" weight="Filled" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="play"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <PlayCircle size={40} fill="currentColor" weight="Filled" />
+              </motion.div>
+            )}
           </AnimatePresence>
         </motion.button>
 
-        <button
+        <motion.button
           type="button"
           onClick={() => mediaControl("Next")}
-          className="text-white/60 hover:text-white transition-colors cursor-pointer p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={SPRING.button}
+          className="text-white/60 hover:text-white transition-colors p-1 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
         >
-          <SkipForward className="w-4 h-4" fill="currentColor" />
-        </button>
+          <Next2 size={24} fill="currentColor" weight="Filled" />
+        </motion.button>
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff } from "lucide-react";
 import { SPRING } from "../../lib/animation-config";
 import { toggleMicMute } from "../../lib/tauri-commands";
 import type { MicStatus } from "../../types";
 import { useTranslation } from "../../hooks/useTranslation";
+import { Microphone, MicrophoneSlash } from "reicon-react";
 
 interface MicWidgetProps {
   micStatus: MicStatus | null;
@@ -41,6 +41,12 @@ export function MicWidget({ micStatus, variant }: MicWidgetProps) {
 
   const iconTransition = { duration: 0.12, ease: "easeOut" as const };
 
+  const microphoneIcon = localMuted ? (
+    <MicrophoneSlash size={13} />
+  ) : (
+    <Microphone size={13} />
+  );
+
   if (variant === "compact") {
     return (
       <motion.button
@@ -49,7 +55,7 @@ export function MicWidget({ micStatus, variant }: MicWidgetProps) {
         whileTap={{ scale: 0.88 }}
         transition={SPRING.button}
         title={localMuted ? t("micMuted") : t("micLive")}
-        className={`flex items-center justify-center w-4 h-4 rounded-full cursor-pointer focus-visible:outline-none transition-colors ${
+        className={`flex items-center justify-center w-4 h-4 rounded-full focus-visible:outline-none transition-colors ${
           localMuted ? "text-red-400" : "text-white/85 hover:text-white"
         }`}
       >
@@ -62,11 +68,7 @@ export function MicWidget({ micStatus, variant }: MicWidgetProps) {
             transition={iconTransition}
             className="flex items-center justify-center"
           >
-            {localMuted ? (
-              <MicOff className="w-3.5 h-3.5" />
-            ) : (
-              <Mic className="w-3.5 h-3.5" />
-            )}
+            {microphoneIcon}
           </motion.div>
         </AnimatePresence>
       </motion.button>
@@ -82,7 +84,7 @@ export function MicWidget({ micStatus, variant }: MicWidgetProps) {
       whileTap={{ scale: 0.92 }}
       transition={SPRING.button}
       title={localMuted ? t("micUnmuteAction") : t("micMuteAction")}
-      className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer select-none focus:outline-none transition-colors ${
+      className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold select-none focus:outline-none transition-colors ${
         localMuted
           ? "bg-red-500/15 text-red-400 hover:bg-red-500/25"
           : "text-white/50 hover:text-white hover:bg-white/[0.06]"
@@ -97,11 +99,7 @@ export function MicWidget({ micStatus, variant }: MicWidgetProps) {
           transition={iconTransition}
           className="flex items-center justify-center"
         >
-          {localMuted ? (
-            <MicOff className="w-3.5 h-3.5" />
-          ) : (
-            <Mic className="w-3.5 h-3.5" />
-          )}
+          {microphoneIcon}
         </motion.div>
       </AnimatePresence>
     </motion.button>
