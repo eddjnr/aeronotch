@@ -1,22 +1,20 @@
 import { useEffect, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import {
-  File,
-  Folder,
-  Image as ImageIcon,
-  FileText,
-  Film,
-  Music as MusicIcon,
-  Archive,
-  Code,
-  Copy,
-  FolderOpen,
-  Trash2,
-  Upload,
-  MoreVertical,
+  Code4,
   Check,
   X,
-} from "lucide-react";
+  Archive,
+  Music as MusicIcon,
+  Film,
+  Copy,
+  Trash2,
+  FolderOpen,
+  Image as ImageIcon,
+  Folder,
+  File,
+  FileText,
+} from "reicon-react";
 import { useTrayStore, TrayFile } from "../../stores/tray-store";
 import { useIslandStore } from "../../stores/island-store";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -32,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
+import { UploadSquare } from "reicon-react";
 
 // Helper to get extension-specific icons
 function getFileIcon(extension: string, isDir: boolean) {
@@ -69,7 +68,7 @@ function getFileIcon(extension: string, isDir: boolean) {
       "go",
     ].includes(ext)
   ) {
-    return <Code className="w-8 h-8 text-emerald-400 fill-emerald-400/10" />;
+    return <Code4 className="w-8 h-8 text-emerald-400!" />;
   }
   if (
     ["txt", "md", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(
@@ -117,7 +116,8 @@ function ImagePreview({ path, name }: { path: string; name: string }) {
 }
 
 export function TrayWidget() {
-  const { files, removeFile, clearTray, verifyFiles, isVerifying } = useTrayStore();
+  const { files, removeFile, clearTray, verifyFiles, isVerifying } =
+    useTrayStore();
   const { t } = useTranslation();
   const isDragging = useIslandStore((s) => s.isDragging);
   const setIsDropdownOpen = useIslandStore((s) => s.setIsDropdownOpen);
@@ -217,14 +217,30 @@ export function TrayWidget() {
             }`}
           >
             {isVerifying ? (
-              <svg className="w-5 h-5 animate-spin text-white/30" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <svg
+                className="w-5 h-5 animate-spin text-white/30"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
             ) : (
-              <Upload
+              <UploadSquare
+                weight="Filled"
                 className={`w-5 h-5 transition-colors duration-200 ${
-                  isDragging ? "text-black" : "text-white/30"
+                  isDragging ? "text-black!" : "text-white/30!"
                 }`}
               />
             )}
@@ -251,24 +267,24 @@ export function TrayWidget() {
                   <button
                     type="button"
                     onClick={handleCopySelected}
-                    className="flex h-5 items-center gap-1 rounded-full bg-white/[0.12] px-2.5 text-[9px] font-semibold text-white shadow-[inset_0_1px_rgba(255,255,255,0.08)] transition-all duration-150 hover:bg-white/[0.16] active:scale-[0.97] cursor-pointer"
+                    className="flex h-5 items-center gap-1 rounded-full bg-white/[0.12] px-2.5 text-[9px] font-semibold text-white shadow-[inset_0_1px_rgba(255,255,255,0.08)] transition-all duration-150 hover:bg-white/[0.16] active:scale-[0.97]"
                   >
-                    <Copy className="w-2.5 h-2.5 text-sky-300" />
+                    <Copy size={14} className="text-sky-300!" />
                     {t("trayCopy")}
                   </button>
                   <button
                     type="button"
                     onClick={handleRemoveSelected}
-                    className="flex h-5 items-center gap-1 rounded-full px-2.5 text-[9px] font-medium text-white/62 transition-all duration-150 hover:bg-rose-500/[0.13] hover:text-rose-100 active:scale-[0.97] cursor-pointer"
+                    className="flex h-5 items-center gap-1 rounded-full px-2.5 text-[9px] font-medium text-white/62 transition-all duration-150 hover:bg-rose-500/[0.13] hover:text-rose-100 active:scale-[0.97]"
                   >
-                    <Trash2 className="w-2.5 h-2.5 text-rose-300/85" />
+                    <Trash2 size={14} className="text-rose-300/85!" />
                     {t("trayRemoveSelected")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedIds([])}
                     aria-label={t("trayClearSelection")}
-                    className="flex h-5 w-5 items-center justify-center rounded-full text-white/45 transition-all duration-150 hover:bg-white/[0.09] hover:text-white/80 active:scale-[0.94] cursor-pointer"
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-white/45 transition-all duration-150 hover:bg-white/[0.09] hover:text-white/80 active:scale-[0.94]"
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>
@@ -282,7 +298,7 @@ export function TrayWidget() {
                 <button
                   type="button"
                   onClick={clearTray}
-                  className="text-[9px] font-medium text-rose-400/60 hover:text-rose-400 transition-colors cursor-pointer bg-white/[0.02] hover:bg-rose-500/10 px-2.5 py-0.5 rounded-full"
+                  className="text-[9px] font-medium text-rose-400/60 hover:text-rose-400 transition-colors bg-white/[0.02] hover:bg-rose-500/10 px-2.5 py-0.5 rounded-full"
                 >
                   {t("trayClearAll")}
                 </button>
@@ -307,7 +323,7 @@ export function TrayWidget() {
                 onDoubleClick={() => handleOpen(file)}
                 onClick={(e) => handleToggleSelect(file.id, e)}
                 onKeyDown={(e) => handleFileKeyDown(file.id, e)}
-                className={`relative flex-shrink-0 w-[100px] h-[86px] rounded-xl border flex flex-col items-center justify-between p-2 transition-all duration-200 cursor-pointer group ${
+                className={`relative flex-shrink-0 w-[100px] h-[86px] rounded-xl border flex flex-col items-center justify-between p-2 transition-all duration-200 group ${
                   selectedIds.includes(file.id)
                     ? "border-sky-500 bg-sky-500/10 shadow-[0_0_12px_rgba(14,165,233,0.15)]"
                     : "border-white/[0.04] hover:border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
@@ -349,9 +365,17 @@ export function TrayWidget() {
                     <button
                       type="button"
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute top-1 right-1 p-0.5 rounded-full hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                      className="absolute top-1 right-1 p-0.5 rounded-full hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                     >
-                      <MoreVertical className="w-3 h-3" />
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="w-3 h-3"
+                      >
+                        <circle cx="12" cy="5" r="2" />
+                        <circle cx="12" cy="12" r="2" />
+                        <circle cx="12" cy="19" r="2" />
+                      </svg>
                     </button>
                   </DropdownMenuTrigger>
 
@@ -364,7 +388,7 @@ export function TrayWidget() {
                     {/* Copy */}
                     <DropdownMenuItem
                       onClick={() => handleCopy(file)}
-                      className="flex items-center gap-2 px-2.5 py-1.5 text-[10px] font-medium text-white/95 rounded-lg hover:bg-white/[0.08] focus:bg-white/[0.08] focus:text-white transition-colors cursor-pointer text-left w-full"
+                      className="flex items-center gap-2 px-2.5 py-1.5 text-[10px] font-medium text-white/95 rounded-lg hover:bg-white/[0.08] focus:bg-white/[0.08] focus:text-white transition-colors text-left w-full"
                     >
                       <Copy className="w-3.5 h-3.5 text-white/50" />
                       <span>{t("trayCopy")}</span>
@@ -373,7 +397,7 @@ export function TrayWidget() {
                     {/* Reveal */}
                     <DropdownMenuItem
                       onClick={() => handleReveal(file)}
-                      className="flex items-center gap-2 px-2.5 py-1.5 text-[10px] font-medium text-white/95 rounded-lg hover:bg-white/[0.08] focus:bg-white/[0.08] focus:text-white transition-colors cursor-pointer text-left w-full"
+                      className="flex items-center gap-2 px-2.5 py-1.5 text-[10px] font-medium text-white/95 rounded-lg hover:bg-white/[0.08] focus:bg-white/[0.08] focus:text-white transition-colors text-left w-full"
                     >
                       <FolderOpen className="w-3.5 h-3.5 text-white/50" />
                       <span>{t("trayReveal")}</span>
@@ -389,7 +413,7 @@ export function TrayWidget() {
                         setIsDropdownOpen(false);
                         removeFile(file.id);
                       }}
-                      className="flex items-center gap-2 px-2.5 py-1.5 text-[10px] font-medium text-rose-400 rounded-lg hover:bg-rose-500/10 focus:bg-rose-500/10 focus:text-rose-400 transition-colors cursor-pointer text-left w-full"
+                      className="flex items-center gap-2 px-2.5 py-1.5 text-[10px] font-medium text-rose-400 rounded-lg hover:bg-rose-500/10 focus:bg-rose-500/10 focus:text-rose-400 transition-colors text-left w-full"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-rose-400/60" />
                       <span>{t("trayRemove")}</span>
