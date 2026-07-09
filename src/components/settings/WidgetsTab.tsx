@@ -1,15 +1,15 @@
 import { m } from "framer-motion";
 import {
+  Cloud,
+  Clock3,
   Music,
   Calendar,
-  Activity,
-  Cloud,
-  Clock,
+  Activity2,
   Folder,
-  Mic,
-  Grid,
-  ListTodo,
-} from "lucide-react";
+  Microphone,
+  Grid22,
+  TaskSquare2,
+} from "reicon-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import {
@@ -40,49 +40,49 @@ const WIDGETS: {
     key: "showMusic",
     icon: Music,
     labelKey: "lblMusicWidget",
-    bg: "bg-[#ff2d55]",
+    bg: "bg-[#ff2d55]/40",
     shadow: "shadow-[0_1px_3px_rgba(255,45,85,0.3)]",
   },
   {
     key: "showCalendar",
     icon: Calendar,
     labelKey: "lblCalendarWidget",
-    bg: "bg-[#ff9500]",
+    bg: "bg-[#ff9500]/40",
     shadow: "shadow-[0_1px_3px_rgba(255,149,0,0.3)]",
   },
   {
     key: "showSystem",
-    icon: Activity,
+    icon: Activity2,
     labelKey: "lblSystemWidget",
-    bg: "bg-[#34c759]",
+    bg: "bg-[#34c759]/40",
     shadow: "shadow-[0_1px_3px_rgba(52,199,89,0.3)]",
   },
   {
     key: "showWeather",
     icon: Cloud,
     labelKey: "lblWeatherWidget",
-    bg: "bg-[#5ac8fa]",
+    bg: "bg-[#5ac8fa]/40",
     shadow: "shadow-[0_1px_3px_rgba(90,200,250,0.3)]",
   },
   {
     key: "showClock",
-    icon: Clock,
+    icon: Clock3,
     labelKey: "lblClockWidget",
-    bg: "bg-[#5856d6]",
+    bg: "bg-[#5856d6]/40",
     shadow: "shadow-[0_1px_3px_rgba(88,86,214,0.3)]",
   },
   {
     key: "showTray",
     icon: Folder,
     labelKey: "lblTrayWidget",
-    bg: "bg-[#007aff]",
+    bg: "bg-[#007aff]/40",
     shadow: "shadow-[0_1px_3px_rgba(0,122,255,0.3)]",
   },
   {
     key: "showMic",
-    icon: Mic,
+    icon: Microphone,
     labelKey: "lblMicWidget",
-    bg: "bg-[#ff3b30]",
+    bg: "bg-[#ff3b30]/40",
     shadow: "shadow-[0_1px_3px_rgba(255,59,48,0.3)]",
   },
 ];
@@ -106,23 +106,21 @@ export function WidgetsTab() {
       className="flex flex-col gap-6 max-w-lg"
     >
       <div>
-        <h1 className="text-[22px] font-bold text-[#1d1d1f] tracking-tight">
+        <h1 className="text-[22px] font-bold text-white tracking-tight">
           {t("widgetsTitle")}
         </h1>
-        <p className="text-[13px] text-[#86868b] mt-1">
-          {t("widgetsSubtitle")}
-        </p>
+        <p className="text-[13px] text-white/40 mt-1">{t("widgetsSubtitle")}</p>
       </div>
 
       <SettingsGroup title={t("groupActiveModules")}>
-        {WIDGETS.map(({ key, icon: Icon, labelKey, bg, shadow }) => (
+        {WIDGETS.map(({ key, icon: Icon, labelKey, bg }) => (
           <WidgetToggleRow
             key={key}
             icon={
               <div
-                className={`w-7 h-7 flex items-center justify-center rounded-lg ${bg} text-white ${shadow}`}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg ${bg} text-white`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-3.5 h-3.5" weight="Filled" />
               </div>
             }
             label={t(labelKey)}
@@ -133,22 +131,22 @@ export function WidgetsTab() {
       </SettingsGroup>
 
       <SettingsGroup title={t("lblRightCorner")}>
-        <div className="flex flex-col gap-3 py-3.5 px-4 bg-white">
+        <div className="flex flex-col gap-3 py-3.5 px-4 bg-transparent">
           <div className="flex flex-col">
-            <span className="text-xs font-semibold text-[#1d1d1f]">
+            <span className="text-xs font-semibold text-white">
               {t("lblRightCornerDesc")}
             </span>
           </div>
-          <div className="flex bg-[#e8e8ea] rounded-xl p-0.5 border border-black/5 w-full">
+          <div className="flex bg-[#1c1c1e] rounded-xl p-0.5 border border-white/[0.08] w-full">
             {(["widgets", "custom"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => updateAndEmit("rightCornerMode", mode)}
-                className={`flex-1 text-center py-2 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer outline-none active:scale-[0.98] ${
+                className={`flex-1 text-center py-2 text-xs font-semibold rounded-lg transition-all duration-200 outline-none active:scale-[0.98] ${
                   settings.rightCornerMode === mode
-                    ? "bg-white shadow-[0_1px_2px_rgba(0,0,0,0.1)] text-[#1d1d1f]"
-                    : "text-[#555557] hover:text-[#1d1d1f] hover:bg-black/[0.02]"
+                    ? "bg-[#3a3a3c] shadow-[0_1px_2px_rgba(0,0,0,0.2)] text-white"
+                    : "text-white/60 hover:text-white hover:bg-white/[0.02]"
                 }`}
               >
                 {mode === "widgets"
@@ -160,9 +158,9 @@ export function WidgetsTab() {
         </div>
 
         {settings.rightCornerMode === "custom" && (
-          <div className="flex flex-col gap-3 py-3.5 px-4 bg-white">
+          <div className="flex flex-col gap-3 py-3.5 px-4 bg-transparent">
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold text-[#1d1d1f]">
+              <span className="text-xs font-semibold text-white">
                 {t("lblCustomUrl")}
               </span>
               <div className="flex gap-2">
@@ -174,7 +172,7 @@ export function WidgetsTab() {
                   }
                   placeholder={t("phCustomUrl")}
                   aria-label={t("lblCustomUrl")}
-                  className="flex-1 bg-[#f5f5f7] border border-black/10 rounded-lg px-3 py-2 text-xs text-[#1d1d1f] placeholder:text-[#86868b] outline-none focus:bg-white focus:border-[#007aff] focus:ring-1 focus:ring-[#007aff] transition-all"
+                  className="flex-1 bg-[#1c1c1e] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/30 outline-none focus:bg-[#1c1c1e] focus:border-[#007aff] focus:ring-1 focus:ring-[#007aff] transition-all"
                 />
                 <button
                   type="button"
@@ -207,7 +205,7 @@ export function WidgetsTab() {
                       console.error("File picker failed", e);
                     }
                   }}
-                  className="bg-[#007aff] hover:bg-[#0062cc] active:scale-95 text-white text-xs font-semibold px-4 py-2 rounded-lg cursor-pointer transition-all flex-shrink-0"
+                  className="bg-[#007aff] hover:bg-[#0062cc] active:scale-95 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all flex-shrink-0"
                 >
                   {t("btnBrowse")}
                 </button>
@@ -215,9 +213,9 @@ export function WidgetsTab() {
             </div>
 
             {settings.customRightCornerUrl && (
-              <div className="flex items-center justify-between gap-3 bg-[#f5f5f7] p-2.5 rounded-xl border border-black/5">
+              <div className="flex items-center justify-between gap-3 bg-[#1c1c1e] p-2.5 rounded-xl border border-white/[0.08]">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-black/10 bg-black/5 flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/[0.08] bg-white/5 flex items-center justify-center shrink-0">
                     <img
                       src={settings.customRightCornerUrl}
                       alt="Preview"
@@ -228,11 +226,11 @@ export function WidgetsTab() {
                     />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-semibold text-[#1d1d1f] truncate">
+                    <span className="text-[10px] font-semibold text-white truncate">
                       {settings.customRightCornerUrl.split("/").pop() ||
                         "image"}
                     </span>
-                    <span className="text-[9px] text-[#86868b]">
+                    <span className="text-[9px] text-white/40">
                       Image Preview
                     </span>
                   </div>
@@ -240,7 +238,7 @@ export function WidgetsTab() {
                 <button
                   type="button"
                   onClick={() => updateAndEmit("customRightCornerUrl", "")}
-                  className="text-[10px] font-semibold text-[#ff3b30] hover:text-[#ff453a] px-2.5 py-1 rounded-md hover:bg-[#ff3b30]/10 transition-colors cursor-pointer shrink-0"
+                  className="text-[10px] font-semibold text-[#ff453a] hover:text-[#ff453a] px-2.5 py-1 rounded-md hover:bg-[#ff453a]/15 transition-colors shrink-0"
                 >
                   Remove
                 </button>
@@ -251,34 +249,34 @@ export function WidgetsTab() {
       </SettingsGroup>
 
       <SettingsGroup title={t("lblUpcomingExtensions")} disabled>
-        <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+        <div className="flex items-center justify-between py-2.5 px-4 bg-transparent">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#8e8e93] text-white flex-shrink-0">
-              <Grid className="w-3.5 h-3.5" />
+              <Grid22 weight="Filled" className="w-3.5 h-3.5" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-[#1d1d1f]">
+              <span className="text-xs font-semibold text-white">
                 {t("lblQuickApps")}
               </span>
             </div>
           </div>
-          <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded select-none">
+          <span className="text-[10px] font-bold text-white/40 bg-[#3a3a3c] px-2 py-0.5 rounded select-none">
             {t("lblPlanned")}
           </span>
         </div>
 
-        <div className="flex items-center justify-between py-2.5 px-4 bg-white">
+        <div className="flex items-center justify-between py-2.5 px-4 bg-transparent">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#8e8e93] text-white flex-shrink-0">
-              <ListTodo className="w-3.5 h-3.5" />
+              <TaskSquare2 weight="Filled" className="w-3.5 h-3.5" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-[#1d1d1f]">
+              <span className="text-xs font-semibold text-white">
                 {t("lblTodos")}
               </span>
             </div>
           </div>
-          <span className="text-[10px] font-bold text-[#86868b] bg-[#e8e8ea] px-2 py-0.5 rounded select-none">
+          <span className="text-[10px] font-bold text-white/40 bg-[#3a3a3c] px-2 py-0.5 rounded select-none">
             {t("lblPlanned")}
           </span>
         </div>
