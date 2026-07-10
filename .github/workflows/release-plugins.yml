@@ -3,6 +3,7 @@ name: Release Plugins
 on:
   push:
     tags:
+      - '*-v[0-9]*'
       - 'plugins-v*'
   workflow_dispatch:
 
@@ -36,23 +37,59 @@ jobs:
       - name: Update manifest.json version
         shell: bash
         run: |
-          if [[ "${{ github.ref_name }}" =~ ^plugins-v[0-9] ]]; then
-            VERSION=${{ github.ref_name }}
-            VERSION=${VERSION#plugins-v}
-            echo "Publishing version $VERSION..."
-            node -e "
-              const fs = require('fs');
-              const path = 'plugins/github-plugin/dist/manifest.json';
-              const manifest = JSON.parse(fs.readFileSync(path, 'utf8'));
-              manifest.version = '$VERSION';
-              fs.writeFileSync(path, JSON.stringify(manifest, null, 2));
-            "
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" =~ ^plugins-v[0-9] ]]; then
+            VERSION=${TAG#plugins-v}
+            echo "Publishing all plugins with version $VERSION..."
+            for manifest_path in plugins/*/dist/manifest.json; do
+              if [ -f "$manifest_path" ]; then
+                node -e "
+                  const fs = require('fs');
+                  const path = '$manifest_path';
+                  const manifest = JSON.parse(fs.readFileSync(path, 'utf8'));
+                  manifest.version = '$VERSION';
+                  fs.writeFileSync(path, JSON.stringify(manifest, null, 2));
+                "
+                echo "Updated manifest: $manifest_path to version $VERSION"
+              fi
+            done
+          elif [[ "$TAG" =~ -v[0-9] ]]; then
+            PLUGIN_ID="${TAG%-v*}"
+            VERSION="${TAG##*-v}"
+            echo "Publishing plugin $PLUGIN_ID with version $VERSION..."
+            manifest_path="plugins/$PLUGIN_ID/dist/manifest.json"
+            if [ -f "$manifest_path" ]; then
+              node -e "
+                const fs = require('fs');
+                const path = '$manifest_path';
+                const manifest = JSON.parse(fs.readFileSync(path, 'utf8'));
+                manifest.version = '$VERSION';
+                fs.writeFileSync(path, JSON.stringify(manifest, null, 2));
+              "
+              echo "Updated manifest: $manifest_path to version $VERSION"
+            else
+              echo "Warning: Manifest not found at $manifest_path"
+            fi
           fi
 
       - name: Prepare deployment directory
         run: |
-          mkdir -p deploy-dist/plugins/github-plugin
-          cp -r plugins/github-plugin/dist/* deploy-dist/plugins/github-plugin/
+          mkdir -p deploy-dist/plugins
+          # Copy each plugin's dist content to deploy-dist/plugins/<plugin-id>/
+          for plugin_dir in plugins/*; do
+            if [ -d "$plugin_dir" ]; then
+              plugin_name=$(basename "$plugin_dir")
+              if [ "$plugin_name" != "registry.json" ] && [ -d "$plugin_dir/dist" ]; then
+                echo "Copying built assets for plugin: $plugin_name"
+                mkdir -p "deploy-dist/plugins/$plugin_name"
+                cp -r "$plugin_dir/dist"/* "deploy-dist/plugins/$plugin_name/"
+              fi
+            fi
+          done
+          # Copy global registry.json if exists
+          if [ -f "plugins/registry.json" ]; then
+            cp plugins/registry.json deploy-dist/
+          fi
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
