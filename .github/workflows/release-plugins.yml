@@ -1,0 +1,62 @@
+name: Release Plugins
+
+on:
+  push:
+    tags:
+      - 'plugins-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release-plugins:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build plugins
+        run: pnpm plugins:build
+
+      - name: Update manifest.json version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^plugins-v[0-9] ]]; then
+            VERSION=${{ github.ref_name }}
+            VERSION=${VERSION#plugins-v}
+            echo "Publishing version $VERSION..."
+            node -e "
+              const fs = require('fs');
+              const path = 'plugins/github-plugin/dist/manifest.json';
+              const manifest = JSON.parse(fs.readFileSync(path, 'utf8'));
+              manifest.version = '$VERSION';
+              fs.writeFileSync(path, JSON.stringify(manifest, null, 2));
+            "
+          fi
+
+      - name: Prepare deployment directory
+        run: |
+          mkdir -p deploy-dist/plugins/github-plugin
+          cp -r plugins/github-plugin/dist/* deploy-dist/plugins/github-plugin/
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: deploy-dist
+          branch: gh-pages
+          clean: false
