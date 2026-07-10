@@ -67,6 +67,16 @@ pub fn run() {
             commands::files::reveal_in_explorer,
             commands::files::rename_file_on_disk,
             commands::files::open_file_on_disk,
+            commands::plugins::get_app_data_dir,
+            commands::plugins::write_plugin_file,
+            commands::plugins::read_plugin_file,
+            commands::plugins::delete_plugin_file,
+            commands::plugins::list_plugin_dir,
+            commands::plugins_secure::save_secure_token,
+            commands::plugins_secure::get_secure_token,
+            commands::plugins_secure::delete_secure_token,
+            commands::plugins_secure::github_request_device_code,
+            commands::plugins_secure::github_poll_access_token,
         ])
         .setup(move |app| {
             let window = app.get_webview_window("main")

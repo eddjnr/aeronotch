@@ -2,6 +2,8 @@ pub mod calendar;
 pub mod files;
 pub mod media;
 pub mod mic;
+pub mod plugins;
+pub mod plugins_secure;
 pub mod settings;
 pub mod system;
 pub mod weather;

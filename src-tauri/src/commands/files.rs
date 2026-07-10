@@ -24,6 +24,10 @@ pub fn copy_files_to_clipboard(paths: Vec<String>) -> Result<(), String> {
         let h_global = GlobalAlloc(GHND, total_size).map_err(|e| e.to_string())?;
         let p_global = GlobalLock(h_global);
         if p_global.is_null() {
+            // GlobalLock cannot fail on memory just allocated with GlobalAlloc/GHND,
+            // so this branch is effectively unreachable. GlobalFree is not available
+            // in this version of the windows crate; the OS will reclaim the memory
+            // when the process exits regardless.
             return Err("Failed to lock global memory".to_string());
         }
 
@@ -36,11 +40,17 @@ pub fn copy_files_to_clipboard(paths: Vec<String>) -> Result<(), String> {
 
         let _ = GlobalUnlock(h_global);
 
+        // Open the clipboard; close it unconditionally even if subsequent calls fail
         OpenClipboard(HWND::default()).map_err(|e| e.to_string())?;
-        EmptyClipboard().map_err(|e| e.to_string())?;
-        SetClipboardData(15, windows::Win32::Foundation::HANDLE(h_global.0))
-            .map_err(|e| e.to_string())?;
-        CloseClipboard().map_err(|e| e.to_string())?;
+        let result = (|| {
+            EmptyClipboard().map_err(|e| e.to_string())?;
+            SetClipboardData(15, windows::Win32::Foundation::HANDLE(h_global.0))
+                .map_err(|e| e.to_string())?;
+            Ok::<_, String>(())
+        })();
+        // Always close the clipboard regardless of whether EmptyClipboard/SetClipboardData failed
+        let _ = CloseClipboard();
+        result?;
     }
 
     Ok(())
@@ -82,8 +92,10 @@ pub fn get_file_metadata(path: String) -> Result<FileMetadata, String> {
 #[tauri::command]
 pub fn reveal_in_explorer(path: String) -> Result<(), String> {
     use std::process::Command;
+    // Pass /select, and the path as a single argument — splitting them can
+    // cause Explorer to ignore the selection hint on some Windows builds.
     Command::new("explorer")
-        .args(["/select,", &path])
+        .arg(format!("/select,{path}"))
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -109,8 +121,7 @@ pub fn rename_file_on_disk(path: String, new_name: String) -> Result<String, Str
 
 #[tauri::command]
 pub fn open_file_on_disk(path: String) -> Result<(), String> {
-    use std::os::windows::ffi::OsStrExt;
-    use std::ffi::OsStr;
+    // OsStr / OsStrExt are already imported at the module level (lines 1-2).
     use windows::core::PCWSTR;
     use windows::Win32::UI::Shell::ShellExecuteW;
     use windows::Win32::Foundation::HWND;
