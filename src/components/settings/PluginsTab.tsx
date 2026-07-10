@@ -1,8 +1,21 @@
 import { useState, useEffect } from "react";
 import { m } from "framer-motion";
-import { useInstalledPlugins, usePluginStore } from "../../plugins/plugin-store";
+import {
+  useInstalledPlugins,
+  usePluginStore,
+} from "../../plugins/plugin-store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { emit } from "@tauri-apps/api/event";
-import { installPlugin, uninstallPlugin, loadPlugin } from "../../plugins/plugin-manager";
+import {
+  installPlugin,
+  uninstallPlugin,
+  loadPlugin,
+} from "../../plugins/plugin-manager";
 import { writePluginFile } from "../../lib/plugin-commands";
 
 const tabTransition = {
@@ -24,6 +37,8 @@ export function PluginsTab() {
   const installStatus = usePluginStore((s) => s.installStatus);
   const loaded = usePluginStore((s) => s.loaded);
   const loadErrors = usePluginStore((s) => s.loadErrors);
+  const pluginVisibility = usePluginStore((s) => s.pluginVisibility) || {};
+  const setPluginVisibility = usePluginStore((s) => s.setPluginVisibility);
   const [manifestUrl, setManifestUrl] = useState("");
   const [installing, setInstalling] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
@@ -38,7 +53,9 @@ export function PluginsTab() {
       setLoadingRegistry(true);
       setRegistryError(null);
       try {
-        const res = await fetch("https://eddjnr.github.io/aeronotch/registry.json");
+        const res = await fetch(
+          "https://eddjnr.github.io/aeronotch/registry.json",
+        );
         if (!res.ok) throw new Error("Failed to fetch registry");
         const data = await res.json();
         if (data && Array.isArray(data.plugins)) {
@@ -135,14 +152,19 @@ export default function Expanded() {
 
     try {
       // Write all files natively using Tauri filesystem wrappers to prevent any mismatch
-      await writePluginFile("plugins/test-plugin/manifest.json", JSON.stringify(manifest, null, 2));
+      await writePluginFile(
+        "plugins/test-plugin/manifest.json",
+        JSON.stringify(manifest, null, 2),
+      );
       await writePluginFile("plugins/test-plugin/compact.js", compactCode);
       await writePluginFile("plugins/test-plugin/expanded.js", expandedCode);
 
       // Register and load
       usePluginStore.getState().registerInstalled(manifest);
       await loadPlugin(manifest);
-      emit("plugins-changed", { installed: usePluginStore.getState().installed }).catch(console.error);
+      emit("plugins-changed", {
+        installed: usePluginStore.getState().installed,
+      }).catch(console.error);
     } catch (e) {
       setInstallError(String(e));
     }
@@ -153,7 +175,8 @@ export default function Expanded() {
       id: "github-plugin",
       name: "GitHub Actions",
       version: "1.0.0",
-      description: "Direct GitHub Actions pipeline monitoring with multi-account OAuth support.",
+      description:
+        "Direct GitHub Actions pipeline monitoring with multi-account OAuth support.",
       icon: "M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.577.688.479C19.138 20.164 22 16.418 22 12c0-5.523-4.477-10-10-10z",
       entry: "plugins/github-plugin/index.js",
       ui: {
@@ -167,7 +190,9 @@ export default function Expanded() {
       // Register and load
       usePluginStore.getState().registerInstalled(manifest);
       await loadPlugin(manifest);
-      emit("plugins-changed", { installed: usePluginStore.getState().installed }).catch(console.error);
+      emit("plugins-changed", {
+        installed: usePluginStore.getState().installed,
+      }).catch(console.error);
     } catch (e) {
       setInstallError(String(e));
     }
@@ -185,15 +210,13 @@ export default function Expanded() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
       transition={tabTransition}
-      className="flex flex-col gap-6 max-w-lg overflow-y-auto max-h-[82vh] pr-2 pb-6"
-      style={{
-        scrollbarWidth: "thin",
-        scrollbarColor: "rgba(255, 255, 255, 0.12) transparent",
-      }}
+      className="flex flex-col gap-6 max-w-lg pb-6"
     >
       {/* Header */}
       <div>
-        <h1 className="text-[22px] font-bold text-white tracking-tight">Plugins</h1>
+        <h1 className="text-[22px] font-bold text-white tracking-tight">
+          Plugins
+        </h1>
         <p className="text-[13px] text-zinc-400 mt-1">
           Extend the island with installable integrations. No app update needed.
         </p>
@@ -207,9 +230,24 @@ export default function Expanded() {
 
         {loadingRegistry ? (
           <div className="flex items-center justify-center gap-2 py-8 text-zinc-400 bg-black/20 rounded-lg border border-white/10">
-            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <svg
+              className="w-4 h-4 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
             <span>Loading store...</span>
           </div>
@@ -222,7 +260,10 @@ export default function Expanded() {
             {registryPlugins.map((reg) => {
               const isInstalled = installed.some((p) => p.id === reg.id);
               const status = installStatus[reg.id];
-              const isInstalling = status?.status === "fetching" || status?.status === "writing" || status?.status === "loading";
+              const isInstalling =
+                status?.status === "fetching" ||
+                status?.status === "writing" ||
+                status?.status === "loading";
 
               return (
                 <div
@@ -233,19 +274,36 @@ export default function Expanded() {
                     {/* Icon */}
                     <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-white/60 flex-shrink-0">
                       {reg.icon ? (
-                        <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                        <svg
+                          className="w-5 h-5 fill-current"
+                          viewBox="0 0 24 24"
+                        >
                           <path d={reg.icon} />
                         </svg>
                       ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.401.604-.401.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.401.604-.401.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z"
+                          />
                         </svg>
                       )}
                     </div>
                     {/* Info */}
                     <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-semibold text-white truncate">{reg.name}</span>
-                      <span className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">{reg.description}</span>
+                      <span className="text-sm font-semibold text-white truncate">
+                        {reg.name}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">
+                        {reg.description}
+                      </span>
                     </div>
                   </div>
 
@@ -262,9 +320,24 @@ export default function Expanded() {
                   >
                     {isInstalling ? (
                       <span className="flex items-center gap-1">
-                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        <svg
+                          className="w-3 h-3 animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
                         </svg>
                         Installing...
                       </span>
@@ -312,7 +385,9 @@ export default function Expanded() {
         )}
         {import.meta.env.DEV && (
           <div className="flex items-center justify-between border-t border-white/[0.04] pt-3 mt-1 gap-4">
-            <span className="text-[10px] text-zinc-400">Or load local plugins pre-written on your AppData:</span>
+            <span className="text-[10px] text-zinc-400">
+              Or load local plugins pre-written on your AppData:
+            </span>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -341,11 +416,23 @@ export default function Expanded() {
 
         {installed.length === 0 && (
           <div className="bg-black/20 rounded-lg border border-white/10 p-6 flex flex-col items-center gap-2 text-center">
-            <svg className="w-8 h-8 text-white/15" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.401.604-.401.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
+            <svg
+              className="w-8 h-8 text-white/15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.401.604-.401.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z"
+              />
             </svg>
             <p className="text-xs text-zinc-500">No plugins installed yet.</p>
-            <p className="text-[10px] text-zinc-600">Install a plugin using its manifest URL above.</p>
+            <p className="text-[10px] text-zinc-600">
+              Install a plugin using its manifest URL above.
+            </p>
           </div>
         )}
 
@@ -367,8 +454,18 @@ export default function Expanded() {
                       <path d={manifest.icon} />
                     </svg>
                   ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.401.604-.401.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.401.604-.401.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z"
+                      />
                     </svg>
                   )}
                 </div>
@@ -376,17 +473,36 @@ export default function Expanded() {
                 {/* Info */}
                 <div className="flex flex-col flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white truncate">{manifest.name}</span>
+                    <span className="text-sm font-semibold text-white truncate">
+                      {manifest.name}
+                    </span>
                     <span className="text-[10px] text-zinc-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded flex-shrink-0">
                       v{manifest.version}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    {status?.status === "loading" || status?.status === "fetching" || status?.status === "writing" ? (
+                    {status?.status === "loading" ||
+                    status?.status === "fetching" ||
+                    status?.status === "writing" ? (
                       <span className="text-[10px] text-blue-400 flex items-center gap-1">
-                        <svg className="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        <svg
+                          className="w-2.5 h-2.5 animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
                         </svg>
                         {status.status}...
                       </span>
@@ -407,28 +523,386 @@ export default function Expanded() {
                       </span>
                     )}
                     {manifest.description && (
-                      <span className="text-[10px] text-zinc-500 truncate">· {manifest.description}</span>
+                      <span className="text-[10px] text-zinc-500 truncate">
+                        · {manifest.description}
+                      </span>
                     )}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-3.5 flex-shrink-0">
+                  {/* Toggle Widget Visibility Dropdown */}
+                  {(manifest.ui.compact || manifest.ui.expanded) &&
+                    (() => {
+                      const currentVisibility =
+                        pluginVisibility[manifest.id] ?? "all";
+
+                      const getVisibilityIcon = (mode: string) => {
+                        switch (mode) {
+                          case "compact":
+                            return (
+                              <svg
+                                className="w-4 h-4 text-white/70"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <rect
+                                  x="3"
+                                  y="9"
+                                  width="18"
+                                  height="6"
+                                  rx="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            );
+                          case "expanded":
+                            return (
+                              <svg
+                                className="w-4 h-4 text-white/70"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <rect
+                                  x="3"
+                                  y="4"
+                                  width="18"
+                                  height="16"
+                                  rx="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M3 10h18"
+                                />
+                              </svg>
+                            );
+                          case "hidden":
+                            return (
+                              <svg
+                                className="w-4 h-4 text-red-400/80"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"
+                                />
+                              </svg>
+                            );
+                          default: // all
+                            return (
+                              <svg
+                                className="w-4 h-4 text-white/70"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                />
+                              </svg>
+                            );
+                        }
+                      };
+
+                      const getVisibilityLabel = (mode: string) => {
+                        switch (mode) {
+                          case "compact":
+                            return "Compact Only";
+                          case "expanded":
+                            return "Expanded Only";
+                          case "hidden":
+                            return "Hidden";
+                          default:
+                            return "All Views";
+                        }
+                      };
+
+                      return (
+                        <div className="flex items-center gap-1.5 select-none border-r border-white/[0.06] pr-3.5">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                title={`Visibility: ${getVisibilityLabel(currentVisibility)}`}
+                                className="text-white bg-white/5 border border-white/10 hover:bg-white/10 p-2 rounded-lg transition-all select-none active:scale-[0.98] flex items-center justify-center gap-1.5"
+                              >
+                                {getVisibilityIcon(currentVisibility)}
+                              </button>
+                            </DropdownMenuTrigger>{" "}
+                            <DropdownMenuContent
+                              align="end"
+                              className="bg-[#1c1c1e] border border-white/10 text-white rounded-xl p-1.5 min-w-[140px]"
+                            >
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setPluginVisibility(manifest.id, "all")
+                                }
+                                className="flex items-center justify-between px-2.5 py-1.5 text-xs text-white hover:bg-white/10 rounded-lg transition-colors w-full"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <svg
+                                    className="w-3.5 h-3.5 text-white/50"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                  </svg>
+                                  <span>All Views</span>
+                                </div>
+                                {currentVisibility === "all" && (
+                                  <svg
+                                    className="w-3.5 h-3.5 text-blue-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setPluginVisibility(manifest.id, "compact")
+                                }
+                                className="flex items-center justify-between px-2.5 py-1.5 text-xs text-white hover:bg-white/10 rounded-lg transition-colors w-full"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <svg
+                                    className="w-3.5 h-3.5 text-white/50"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <rect
+                                      x="3"
+                                      y="9"
+                                      width="18"
+                                      height="6"
+                                      rx="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                  <span>Compact Only</span>
+                                </div>
+                                {currentVisibility === "compact" && (
+                                  <svg
+                                    className="w-3.5 h-3.5 text-blue-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setPluginVisibility(manifest.id, "expanded")
+                                }
+                                className="flex items-center justify-between px-2.5 py-1.5 text-xs text-white hover:bg-white/10 rounded-lg transition-colors w-full"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <svg
+                                    className="w-3.5 h-3.5 text-white/50"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <rect
+                                      x="3"
+                                      y="4"
+                                      width="18"
+                                      height="16"
+                                      rx="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M3 10h18"
+                                    />
+                                  </svg>
+                                  <span>Expanded Only</span>
+                                </div>
+                                {currentVisibility === "expanded" && (
+                                  <svg
+                                    className="w-3.5 h-3.5 text-blue-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setPluginVisibility(manifest.id, "hidden")
+                                }
+                                className="flex items-center justify-between px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors w-full"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <svg
+                                    className="w-3.5 h-3.5 text-red-400/70"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"
+                                    />
+                                  </svg>
+                                  <span>Hidden</span>
+                                </div>
+                                {currentVisibility === "hidden" && (
+                                  <svg
+                                    className="w-3.5 h-3.5 text-red-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })()}
+
                   {manifest.ui.settings && isLoaded && plugin?.settings && (
                     <button
                       type="button"
-                      onClick={() => setExpandedId(expandedId === manifest.id ? null : manifest.id)}
-                      className="text-xs font-semibold text-white bg-white/5 border border-white/10 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors select-none active:scale-[0.98]"
+                      onClick={() =>
+                        setExpandedId(
+                          expandedId === manifest.id ? null : manifest.id,
+                        )
+                      }
+                      title={
+                        expandedId === manifest.id
+                          ? "Close Settings"
+                          : "Configure Plugin"
+                      }
+                      className="text-white bg-white/5 border border-white/10 hover:bg-white/10 p-2 rounded-lg transition-all select-none active:scale-[0.98] flex items-center justify-center"
                     >
-                      {expandedId === manifest.id ? "Close" : "Configure"}
+                      {expandedId === manifest.id ? (
+                        // Close / Chevron Up / Cross icon
+                        <svg
+                          className="w-4 h-4 text-white/70"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      ) : (
+                        // Gear / Settings icon
+                        <svg
+                          className="w-4 h-4 text-white/70"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                      )}
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={() => handleUninstall(manifest.id)}
-                    className="text-xs font-semibold text-red-400 border border-red-500/10 hover:border-red-500/30 hover:bg-red-500/5 px-3 py-1.5 rounded-lg transition-colors active:scale-[0.98]"
+                    title="Remove Plugin"
+                    className="text-red-400 border border-red-500/10 hover:border-red-500/30 hover:bg-red-500/5 p-2 rounded-lg transition-all active:scale-[0.98] flex items-center justify-center"
                   >
-                    Remove
+                    {/* Trash icon */}
+                    <svg
+                      className="w-4 h-4 text-red-400/80"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
                   </button>
                 </div>
               </div>

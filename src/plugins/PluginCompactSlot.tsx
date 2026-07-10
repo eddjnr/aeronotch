@@ -1,5 +1,5 @@
 import { ErrorBoundary } from "../components/ui/error-boundary";
-import { useLoadedPlugins } from "./plugin-store";
+import { useLoadedPlugins, usePluginStore } from "./plugin-store";
 
 /**
  * Renders the compact slot for all loaded plugins that have a compact component.
@@ -7,8 +7,13 @@ import { useLoadedPlugins } from "./plugin-store";
  */
 export function PluginCompactSlot() {
   const plugins = useLoadedPlugins();
+  const pluginVisibility = usePluginStore((s) => s.pluginVisibility) || {};
 
-  const pluginsWithCompact = plugins.filter((p) => p.compact != null);
+  const pluginsWithCompact = plugins.filter((p) => {
+    if (p.compact == null) return false;
+    const visibility = pluginVisibility[p.manifest.id] ?? "all";
+    return visibility === "all" || visibility === "compact";
+  });
 
   if (pluginsWithCompact.length === 0) return null;
 

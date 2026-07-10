@@ -16,7 +16,7 @@ import { useTabFallback } from "../../hooks/useTabFallback";
 import { TabBar } from "./TabBar";
 import { CompactContent } from "./CompactContent";
 import { WeatherPanel } from "./WeatherPanel";
-import { useLoadedPlugins } from "../../plugins/plugin-store";
+import { useLoadedPlugins, usePluginStore } from "../../plugins/plugin-store";
 import { PluginExpandedPanel } from "../../plugins/PluginExpandedPanel";
 
 interface IslandLayoutProps {
@@ -52,7 +52,12 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
 
   // Dynamic plugin tabs (plugins with an expanded view become tabs)
   const loadedPlugins = useLoadedPlugins();
-  const pluginTabs = loadedPlugins.filter((p) => p.expanded != null);
+  const pluginVisibility = usePluginStore((s) => s.pluginVisibility) || {};
+  const pluginTabs = loadedPlugins.filter((p) => {
+    if (p.expanded == null) return false;
+    const visibility = pluginVisibility[p.manifest.id] ?? "all";
+    return visibility === "all" || visibility === "expanded";
+  });
 
   const tabTransition = reduce ? { duration: 0 } : TAB_ANIMATION.transition;
   const tabInitial = reduce

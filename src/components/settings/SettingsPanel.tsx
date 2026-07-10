@@ -16,7 +16,13 @@ export function SettingsPanel() {
     <div className="flex h-full w-full bg-[#1c1c1e] text-[#f5f5f7] font-sans overflow-hidden">
       <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="flex-1 overflow-y-auto px-10 py-8 select-none">
+      <div
+        className="flex-1 overflow-y-auto px-10 py-8 select-none"
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(255, 255, 255, 0.10) transparent",
+        }}
+      >
         <AnimatePresence mode="wait">
           {activeTab === "general" && <GeneralTab />}
           {activeTab === "widgets" && <WidgetsTab />}

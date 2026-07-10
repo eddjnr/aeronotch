@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { m } from "framer-motion";
 import { SpinningText } from "@/components/ui/spinnig-text";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -10,31 +9,6 @@ const tabTransition = {
 
 export function AboutTab() {
   const { t } = useTranslation();
-  const kofiContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let script = document.querySelector(
-      'script[src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"]'
-    ) as HTMLScriptElement | null;
-
-    const initWidget = () => {
-      const kofi = (window as any).kofiwidget2;
-      if (kofi && kofiContainerRef.current) {
-        kofi.init('Buy me a coffe', '#141414', 'F6J722W2N5');
-        kofi.draw();
-      }
-    };
-
-    if (!script) {
-      script = document.createElement("script");
-      script.src = "https://storage.ko-fi.com/cdn/widget/Widget_2.js";
-      script.async = true;
-      script.onload = initWidget;
-      document.body.appendChild(script);
-    } else {
-      initWidget();
-    }
-  }, []);
 
   return (
     <m.div
@@ -43,27 +17,39 @@ export function AboutTab() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
       transition={tabTransition}
-      className="flex flex-col gap-6 max-w-lg overflow-y-auto max-h-[82vh] pr-2 pb-6"
-      style={{
-        scrollbarWidth: "thin",
-        scrollbarColor: "rgba(255, 255, 255, 0.12) transparent",
-      }}
+      className="flex flex-col gap-4 max-w-lg"
     >
+      {/* Header */}
       <div>
         <h1 className="text-[22px] font-bold text-white tracking-tight">About</h1>
-        <p className="text-[13px] text-white/40 mt-1">AeroNotch System Information</p>
+        <p className="text-[13px] text-white/40 mt-0.5">AeroNotch System Information</p>
       </div>
 
-      <div className="flex flex-col items-center justify-center p-8 bg-[#2c2c2e] rounded-xl border border-white/[0.08] relative overflow-hidden">
-        <SpinningText duration={20} className="text-[#8e8e93] text-xs font-medium">
-          AERONOTCH • MINIMALIST • DYNAMIC •
-        </SpinningText>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[11px] font-bold text-white/40 tracking-wider">
-          {t("lblVersion")}
+      {/* Spinning logo + version */}
+      <div className="flex flex-col items-center justify-center gap-1.5 py-2">
+        <div className="relative flex items-center justify-center">
+          <SpinningText
+            duration={20}
+            fontSize={0.6}
+            radius={4.8}
+            className="text-[#8e8e93]"
+            style={{ width: 120, height: 120 }}
+          >
+            AERONOTCH • MINIMALIST • DYNAMIC •
+          </SpinningText>
+          <img
+            src="/logo.png"
+            alt="AeroNotch"
+            className="absolute w-9 h-9 object-contain opacity-80"
+          />
         </div>
+        <span className="text-[9px] font-medium text-white/25 tracking-[0.2em] uppercase">
+          {t("lblVersion")}
+        </span>
       </div>
 
-      <div className="flex flex-col gap-3 text-xs leading-relaxed text-[#8e8e93]">
+      {/* Description */}
+      <div className="flex flex-col gap-2 text-xs leading-relaxed text-[#8e8e93]">
         <p>
           AeroNotch is an interactive menu bar widget designed for Windows, bringing elegant status
           indicators, quick shortcuts, and media information in a compact layout.
@@ -74,9 +60,31 @@ export function AboutTab() {
         </p>
       </div>
 
-      <div ref={kofiContainerRef} className="mt-2" />
+      {/* Support */}
+      <a
+        href="https://ko-fi.com/F6J722W2N5"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#2c2c2e] border border-white/[0.06] hover:border-white/[0.12] hover:bg-[#3a3a3c] transition-all group"
+      >
+        <span className="text-lg">☕</span>
+        <div className="flex flex-col">
+          <span className="text-[12px] font-semibold text-white">Buy me a coffee</span>
+          <span className="text-[10px] text-white/40">Support AeroNotch on Ko-fi</span>
+        </div>
+        <svg
+          className="ml-auto w-3 h-3 text-white/20 group-hover:text-white/40 transition-colors"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
 
-      <div className="flex items-center gap-1.5 text-[10px] text-[#8e8e93] mt-4">
+      {/* Source */}
+      <div className="flex items-center gap-1.5 text-[10px] text-[#8e8e93]">
         Source code:{" "}
         <a
           href="https://github.com/eddjnr/aeronotch"

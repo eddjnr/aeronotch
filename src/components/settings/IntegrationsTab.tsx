@@ -27,11 +27,7 @@ export function IntegrationsTab() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
       transition={tabTransition}
-      className="flex flex-col gap-6 max-w-lg overflow-y-auto max-h-[82vh] pr-2 pb-6"
-      style={{
-        scrollbarWidth: "thin",
-        scrollbarColor: "rgba(255, 255, 255, 0.12) transparent",
-      }}
+      className="flex flex-col gap-6 max-w-lg pb-6"
     >
       <div>
         <h1 className="text-[22px] font-bold text-white tracking-tight">
@@ -67,7 +63,7 @@ export function IntegrationsTab() {
                 <button
                   type="button"
                   onClick={handleDisconnect}
-                  className="bg-[#ff453a]/15 hover:bg-[#ff453a]/25 text-[#ff453a] text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  className="bg-[#ff453a]/15 hover:bg-[#ff453a]/25 text-[#ff453a] text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors"
                 >
                   {t("btnDisconnect")}
                 </button>
@@ -93,7 +89,7 @@ export function IntegrationsTab() {
                   type="button"
                   onClick={handleConnect}
                   disabled={isConnecting}
-                  className="bg-[#007aff] hover:bg-[#0062cc] disabled:bg-[#007aff]/50 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0 cursor-pointer"
+                  className="bg-[#007aff] hover:bg-[#0062cc] disabled:bg-[#007aff]/50 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
                 >
                   {isConnecting ? t("btnSyncing") : t("btnSyncCalendar")}
                 </button>

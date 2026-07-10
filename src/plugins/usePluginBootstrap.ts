@@ -44,9 +44,29 @@ export function usePluginBootstrap() {
       }
     });
 
+    // Sync plugin visibility changes between windows
+    const unlistenVisibilityPromise = listen("plugin-visibility-changed", (event) => {
+      const payload = event.payload as { pluginId: string; visibility: any };
+      if (payload?.pluginId) {
+        usePluginStore.setState((state) => {
+          const currentVisibility = state.pluginVisibility ?? {};
+          if (currentVisibility[payload.pluginId] === payload.visibility) {
+            return {};
+          }
+          return {
+            pluginVisibility: {
+              ...currentVisibility,
+              [payload.pluginId]: payload.visibility,
+            },
+          };
+        });
+      }
+    });
+
     return () => {
       unlistenPromise.then((unlisten) => unlisten());
       unlistenDataPromise.then((unlisten) => unlisten());
+      unlistenVisibilityPromise.then((unlisten) => unlisten());
     };
   }, []);
 }

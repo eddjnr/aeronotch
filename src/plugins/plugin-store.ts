@@ -26,6 +26,12 @@ interface PluginStoreState {
   pluginData: Record<string, unknown>;
 
   /**
+   * Visibility settings for each plugin widget.
+   * Can be: 'all' | 'compact' | 'expanded' | 'hidden'.
+   */
+  pluginVisibility: Record<string, "all" | "compact" | "expanded" | "hidden">;
+
+  /**
    * Installation progress state per plugin ID.
    */
   installStatus: Record<string, PluginInstallState>;
@@ -34,6 +40,12 @@ interface PluginStoreState {
    * Ephemeral loading errors per plugin ID.
    */
   loadErrors: Record<string, string>;
+
+  /** Update widget visibility */
+  setPluginVisibility: (
+    pluginId: string,
+    visibility: "all" | "compact" | "expanded" | "hidden",
+  ) => void;
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -74,6 +86,7 @@ export const usePluginStore = create<PluginStoreState>()(
       loaded: {},
       pluginData: {},
       installStatus: {},
+      pluginVisibility: {},
 
       registerInstalled: (manifest) =>
         set((state) => {
@@ -83,9 +96,29 @@ export const usePluginStore = create<PluginStoreState>()(
         }),
 
       unregisterInstalled: (pluginId) =>
+        set((state) => {
+          const nextVisibility = { ...(state.pluginVisibility ?? {}) };
+          delete nextVisibility[pluginId];
+          return {
+            installed: state.installed.filter((m) => m.id !== pluginId),
+            pluginVisibility: nextVisibility,
+          };
+        }),
+
+      setPluginVisibility: (pluginId, visibility) => {
         set((state) => ({
-          installed: state.installed.filter((m) => m.id !== pluginId),
-        })),
+          pluginVisibility: {
+            ...(state.pluginVisibility ?? {}),
+            [pluginId]: visibility,
+          },
+        }));
+
+        import("@tauri-apps/api/event")
+          .then(({ emit }) =>
+            emit("plugin-visibility-changed", { pluginId, visibility }),
+          )
+          .catch(console.error);
+      },
 
       registerLoaded: (plugin) =>
         set((state) => ({
@@ -154,8 +187,11 @@ export const usePluginStore = create<PluginStoreState>()(
     }),
     {
       name: "winotch-plugins",
-      // Only persist manifests — runtime loaded state and install progress are ephemeral
-      partialize: (state) => ({ installed: state.installed }),
+      // Persist manifests and pluginVisibility
+      partialize: (state) => ({
+        installed: state.installed,
+        pluginVisibility: state.pluginVisibility ?? {},
+      }),
     },
   ),
 );
