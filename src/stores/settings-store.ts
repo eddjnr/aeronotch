@@ -19,11 +19,15 @@ const DEFAULT_SETTINGS: IslandSettings = {
   showClock: true,
   showTray: true,
   showMic: true,
+  showGitHub: false,
   opacity: 1,
   language: "en",
   monitorPlacement: "primary",
   rightCornerMode: "widgets",
   customRightCornerUrl: "",
+  pusherKey: "",
+  pusherCluster: "",
+  relayUrl: "https://aeronotch-relay.vercel.app",
 };
 
 export const useSettingsStore = create<SettingsState>()(

@@ -77,7 +77,7 @@ export function WeatherWidget({ weather, mode, error }: WeatherWidgetProps) {
   if (!weather) {
     if (error) {
       return (
-        <div className="flex items-center gap-1" title="asda">
+        <div className="flex items-center gap-1" title={error ?? undefined}>
           <CloudX className="w-3.5 h-3.5 text-orange-400/80!" />
         </div>
       );

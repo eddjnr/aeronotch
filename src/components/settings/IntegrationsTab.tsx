@@ -27,7 +27,11 @@ export function IntegrationsTab() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
       transition={tabTransition}
-      className="flex flex-col gap-6 max-w-lg"
+      className="flex flex-col gap-6 max-w-lg overflow-y-auto max-h-[82vh] pr-2 pb-6"
+      style={{
+        scrollbarWidth: "thin",
+        scrollbarColor: "rgba(255, 255, 255, 0.12) transparent",
+      }}
     >
       <div>
         <h1 className="text-[22px] font-bold text-white tracking-tight">
@@ -38,7 +42,8 @@ export function IntegrationsTab() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
+        {/* ── Google Calendar Integration Card ── */}
         <div className="bg-[#2c2c2e] rounded-xl shadow-md border border-white/[0.08] overflow-hidden p-5 flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3.5">
@@ -62,7 +67,7 @@ export function IntegrationsTab() {
                 <button
                   type="button"
                   onClick={handleDisconnect}
-                  className="bg-[#ff453a]/15 hover:bg-[#ff453a]/25 text-[#ff453a] text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors"
+                  className="bg-[#ff453a]/15 hover:bg-[#ff453a]/25 text-[#ff453a] text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer"
                 >
                   {t("btnDisconnect")}
                 </button>
@@ -88,7 +93,7 @@ export function IntegrationsTab() {
                   type="button"
                   onClick={handleConnect}
                   disabled={isConnecting}
-                  className="bg-[#007aff] hover:bg-[#0062cc] disabled:bg-[#007aff]/50 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
+                  className="bg-[#007aff] hover:bg-[#0062cc] disabled:bg-[#007aff]/50 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0 cursor-pointer"
                 >
                   {isConnecting ? t("btnSyncing") : t("btnSyncCalendar")}
                 </button>
@@ -121,7 +126,7 @@ export function IntegrationsTab() {
             <span className="text-xs font-semibold text-white block mb-2">
               {t("instructionsTitle")}
             </span>
-            <ol className="text-xs text-white/50 leading-relaxed list-decimal list-inside flex flex-col gap-1.5">
+            <ol className="text-xs text-white/50 leading-relaxed list-decimal list-inside flex flex-col gap-1.5 select-text">
               <li>
                 Open{" "}
                 <strong className="text-white">{t("lblGoogleCalendar")}</strong>{" "}
@@ -148,7 +153,6 @@ export function IntegrationsTab() {
                   {t("instructionStep3").split("copy the ")[1] ||
                     "Secret address in iCal format"}
                 </strong>
-                .
               </li>
             </ol>
           </div>

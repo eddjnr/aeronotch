@@ -11,6 +11,7 @@ import { useSettingsStore } from './stores/settings-store';
 import { syncMonitorWindows } from './lib/tauri-commands';
 import { getWindowLabel } from './lib/windowLabel';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { usePluginBootstrap } from './plugins/usePluginBootstrap';
 
 function App() {
   const [windowLabel] = useState<string>(getWindowLabel);
@@ -19,6 +20,7 @@ function App() {
   useMediaInfo();
   useMicStatus();
   useWeatherInfo();
+  usePluginBootstrap();
 
   useEffect(() => {
     if (windowLabel === 'main') {

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { IslandMode, MediaInfo, MicStatus, SystemStats, WeatherInfo } from '../types';
+import type { IslandMode, MediaInfo, MicStatus, SystemStats, WeatherInfo, TabId } from '../types';
 
 interface IslandState {
   mode: IslandMode;
@@ -25,8 +25,9 @@ interface IslandState {
   isDragging: boolean;
   setIsDragging: (isDragging: boolean) => void;
 
-  activeTab: "home" | "system" | "weather" | "tray";
-  setActiveTab: (tab: "home" | "system" | "weather" | "tray") => void;
+  /** Active tab — supports core TabIds and dynamic plugin IDs */
+  activeTab: TabId | string;
+  setActiveTab: (tab: TabId | string) => void;
 
   isDropdownOpen: boolean;
   setIsDropdownOpen: (open: boolean) => void;

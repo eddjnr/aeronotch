@@ -58,9 +58,13 @@ export interface IslandSettings {
   showClock: boolean;
   showTray: boolean;
   showMic: boolean;
+  showGitHub: boolean;
   opacity: number;
   language: "en" | "pt-BR";
   monitorPlacement: string;
   rightCornerMode: RightCornerMode;
   customRightCornerUrl: string;
+  pusherKey: string;
+  pusherCluster: string;
+  relayUrl: string;
 }

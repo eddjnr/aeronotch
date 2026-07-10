@@ -75,6 +75,11 @@ export class ErrorBoundary extends Component<
           </svg>
         </div>
         <span>Something went wrong</span>
+        {this.state.error && (
+          <span className="text-[10px] text-rose-400 font-mono max-w-xs break-words mt-1 bg-rose-500/10 px-2 py-1 rounded">
+            {this.state.error.message}
+          </span>
+        )}
         <button
           type="button"
           onClick={this.reset}

@@ -4,6 +4,7 @@ export const translations = {
     tabGeneral: "General",
     tabWidgets: "Widgets",
     tabIntegrations: "Integrations",
+    tabPlugins: "Plugins",
     tabAbout: "About",
     brandSubtitle: "Preferences",
 
@@ -26,6 +27,8 @@ export const translations = {
     lblResetDefaults: "Reset to Defaults",
     btnResetSettings: "Reset Settings",
     btnBrowse: "Browse...",
+    btnRemove: "Remove",
+    imagePreview: "Image Preview",
 
     // Language Settings Group
     groupLanguage: "Language & Region",
@@ -63,7 +66,7 @@ export const translations = {
     // Integrations Tab
     integrationsTitle: "Integrations",
     integrationsSubtitle:
-      "Link with cloud calendars using direct iCal/ICS feed URLs.",
+      "Link with cloud calendars and developer pipelines.",
     lblCalendarSub: "Calendar Subscription",
     descCalendarSubConnected: "Connected and syncing in real-time",
     descCalendarSubDisconnected:
@@ -82,6 +85,36 @@ export const translations = {
     instructionStep3:
       "Scroll down to the Integrate calendar section and copy the Secret address in iCal format.",
     lblGoogleCalendar: "Google Calendar",
+
+    // GitHub Integration
+    githubTitle: "GitHub Actions",
+    githubSubtitle: "Monitor your developer pipelines in real-time.",
+    githubActive: "Connected and listening to WebSockets",
+    githubInactive: "Get instant pipeline alerts on your Dynamic Island.",
+    lblPusherKey: "Pusher App Key",
+    lblPusherCluster: "Pusher Cluster",
+    lblSecretKey: "Secret Webhook Key (UUID)",
+    btnGenerateKey: "Generate",
+    btnSaveEnable: "Save & Enable",
+    btnDisable: "Disable Integration",
+    lblWebhookUrl: "Webhook URL (Use in GitHub App/Webhook)",
+    githubInstructionsTitle: "How to configure your GitHub pipeline monitor:",
+    githubStep1: "Copy the Webhook URL above.",
+    githubStep2: "Go to your GitHub repository settings, click 'Webhooks' -> 'Add webhook'.",
+    githubStep3: "Paste the URL, set Content type to application/json, and select 'Workflow runs' events.",
+    githubPipelinesTitle: "GitHub Pipelines",
+    githubConnectionLive: "Live",
+    githubConnectionConnecting: "Connecting...",
+    githubConnectionError: "Connection Error",
+    githubConnectionOffline: "Offline",
+    githubStatusInProgress: "Running",
+    githubStatusQueued: "Queued",
+    githubStatusSuccess: "Success",
+    githubStatusFailure: "Failed",
+    githubStatusTimeout: "Timed Out",
+    githubStatusCancelled: "Cancelled",
+    githubNoPipelines: "No active pipelines tracked",
+    githubClear: "Clear",
 
     // About Tab
     aboutTitle: "About",
@@ -188,6 +221,7 @@ export const translations = {
     tabGeneral: "Geral",
     tabWidgets: "Widgets",
     tabIntegrations: "Integrações",
+    tabPlugins: "Plugins",
     tabAbout: "Sobre",
     brandSubtitle: "Preferências",
 
@@ -210,6 +244,8 @@ export const translations = {
     lblResetDefaults: "Restaurar Padrões",
     btnResetSettings: "Restaurar",
     btnBrowse: "Procurar...",
+    btnRemove: "Remover",
+    imagePreview: "Pré-visualização",
 
     // Language Settings Group
     groupLanguage: "Idioma e Região",
@@ -247,7 +283,7 @@ export const translations = {
     // Integrations Tab
     integrationsTitle: "Integrações",
     integrationsSubtitle:
-      "Vincule calendários na nuvem usando URLs de feed iCal/ICS diretas.",
+      "Vincule calendários na nuvem e pipelines de desenvolvimento.",
     lblCalendarSub: "Assinatura de Calendário",
     descCalendarSubConnected: "Conectado e sincronizando em tempo real",
     descCalendarSubDisconnected:
@@ -266,6 +302,36 @@ export const translations = {
     instructionStep3:
       "Role até a seção Integrar agenda e copie o Endereço secreto em formato iCal.",
     lblGoogleCalendar: "Google Agenda",
+
+    // GitHub Integration
+    githubTitle: "GitHub Actions",
+    githubSubtitle: "Monitore seus pipelines de desenvolvimento em tempo real.",
+    githubActive: "Conectado e escutando via WebSockets",
+    githubInactive: "Receba alertas de pipeline na sua Dynamic Island.",
+    lblPusherKey: "Chave do App Pusher (Key)",
+    lblPusherCluster: "Cluster do Pusher",
+    lblSecretKey: "Chave Secreta do Webhook (UUID)",
+    btnGenerateKey: "Gerar",
+    btnSaveEnable: "Salvar e Ativar",
+    btnDisable: "Desativar Integração",
+    lblWebhookUrl: "URL do Webhook (Use no App/Webhook do GitHub)",
+    githubInstructionsTitle: "Como configurar o monitor de pipelines do GitHub:",
+    githubStep1: "Copie a URL do Webhook acima.",
+    githubStep2: "Acesse o seu repositório no GitHub, vá em 'Settings' -> 'Webhooks' -> 'Add webhook'.",
+    githubStep3: "Cole a URL no campo 'Payload URL', mude 'Content type' para 'application/json' e marque o evento 'Workflow runs'.",
+    githubPipelinesTitle: "Pipelines do GitHub",
+    githubConnectionLive: "Ao Vivo",
+    githubConnectionConnecting: "Conectando...",
+    githubConnectionError: "Erro de Conexão",
+    githubConnectionOffline: "Desconectado",
+    githubStatusInProgress: "Executando",
+    githubStatusQueued: "Na Fila",
+    githubStatusSuccess: "Sucesso",
+    githubStatusFailure: "Falhou",
+    githubStatusTimeout: "Tempo Esgotado",
+    githubStatusCancelled: "Cancelado",
+    githubNoPipelines: "Nenhum pipeline ativo rastreado",
+    githubClear: "Limpar",
 
     // About Tab
     aboutTitle: "Sobre",

@@ -80,7 +80,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
         {/* Mini Real-time Equalizer */}
         {localIsPlaying && (
           <div className="flex-shrink-0 pr-1 select-none">
-            <Equalizer isPlaying={true} />
+            <Equalizer isPlaying={localIsPlaying} />
           </div>
         )}
       </div>
@@ -101,7 +101,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
       <div className="flex items-center justify-center gap-5 w-full select-none">
         <motion.button
           type="button"
-          onClick={() => mediaControl("Previous")}
+          onClick={() => mediaControl("Previous").catch(console.error)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           transition={SPRING.button}
@@ -154,7 +154,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
 
         <motion.button
           type="button"
-          onClick={() => mediaControl("Next")}
+          onClick={() => mediaControl("Next").catch(console.error)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           transition={SPRING.button}

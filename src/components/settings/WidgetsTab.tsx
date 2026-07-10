@@ -231,7 +231,7 @@ export function WidgetsTab() {
                         "image"}
                     </span>
                     <span className="text-[9px] text-white/40">
-                      Image Preview
+                      {t("imagePreview")}
                     </span>
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export function WidgetsTab() {
                   onClick={() => updateAndEmit("customRightCornerUrl", "")}
                   className="text-[10px] font-semibold text-[#ff453a] hover:text-[#ff453a] px-2.5 py-1 rounded-md hover:bg-[#ff453a]/15 transition-colors shrink-0"
                 >
-                  Remove
+                  {t("btnRemove")}
                 </button>
               </div>
             )}

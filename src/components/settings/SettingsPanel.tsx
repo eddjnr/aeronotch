@@ -4,9 +4,10 @@ import { SettingsSidebar } from "./SettingsSidebar";
 import { GeneralTab } from "./GeneralTab";
 import { WidgetsTab } from "./WidgetsTab";
 import { IntegrationsTab } from "./IntegrationsTab";
+import { PluginsTab } from "./PluginsTab";
 import { AboutTab } from "./AboutTab";
 
-type TabId = "general" | "widgets" | "integrations" | "about";
+type TabId = "general" | "widgets" | "integrations" | "plugins" | "about";
 
 export function SettingsPanel() {
   const [activeTab, setActiveTab] = useState<TabId>("general");
@@ -20,6 +21,7 @@ export function SettingsPanel() {
           {activeTab === "general" && <GeneralTab />}
           {activeTab === "widgets" && <WidgetsTab />}
           {activeTab === "integrations" && <IntegrationsTab />}
+          {activeTab === "plugins" && <PluginsTab />}
           {activeTab === "about" && <AboutTab />}
         </AnimatePresence>
       </div>

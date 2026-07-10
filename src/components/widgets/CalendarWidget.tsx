@@ -9,20 +9,20 @@ interface CalendarWidgetProps {
   mode: IslandMode;
 }
 
+// Helper to check if two Date objects fall on the same calendar day
+function isSameDay(d1: Date, d2: Date) {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+}
+
 export function CalendarWidget({ mode }: CalendarWidgetProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const { t, language } = useTranslation();
-
-  // Helper to check if two Date objects fall on the same calendar day
-  const isSameDay = (d1: Date, d2: Date) => {
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    );
-  };
 
   // Listen to Google Calendar events emitted from Rust backend
   useEffect(() => {
@@ -39,20 +39,18 @@ export function CalendarWidget({ mode }: CalendarWidgetProps) {
         setLoading(false);
       });
 
-    // 2. Listen to updates
-    let unlisten: (() => void) | undefined;
-
-    listen("google-calendar-events", (event: any) => {
+    // 2. Listen to backend updates; store the promise so the cleanup can
+    //    always call unlisten(), even if the component unmounts before the
+    //    promise resolves (avoids a listener leak).
+    const unlistenPromise = listen("google-calendar-events", (event: any) => {
       const payload = event.payload;
       if (payload && Array.isArray(payload.items)) {
         setEvents(payload.items);
       }
-    }).then((fn) => {
-      unlisten = fn;
     });
 
     return () => {
-      if (unlisten) unlisten();
+      unlistenPromise.then((unlisten) => unlisten());
     };
   }, []);
 

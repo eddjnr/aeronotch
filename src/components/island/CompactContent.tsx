@@ -6,6 +6,7 @@ import { WeatherWidget } from "../widgets/WeatherWidget";
 import { SystemWidget } from "../widgets/SystemWidget";
 import { ErrorBoundary } from "../ui/error-boundary";
 import { Folder, FileMinus } from "reicon-react";
+import { PluginCompactSlot } from "../../plugins/PluginCompactSlot";
 import type {
   MediaInfo,
   MicStatus,
@@ -72,7 +73,6 @@ export function CompactContent({
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
               <Folder
                 className="h-3 w-3 text-white"
-                strokeWidth={2.4}
                 weight="Filled"
               />
             </div>
@@ -87,7 +87,7 @@ export function CompactContent({
               <span className="min-w-[0.75rem] text-right text-[11px] font-bold leading-none tabular-nums">
                 {trayCompactCount}
               </span>
-              <FileMinus className="h-3.5 w-3.5" strokeWidth={2.35} />
+              <FileMinus className="h-3.5 w-3.5" weight="Filled" />
             </div>
           </div>
         </>
@@ -102,6 +102,7 @@ export function CompactContent({
                 <ClockWidget mode="compact" />
               </ErrorBoundary>
             )}
+            <PluginCompactSlot />
           </div>
           <div className="flex items-center gap-2.5">
             {showMic && (

@@ -62,6 +62,16 @@ export function ProgressBar({
     return () => clearInterval(interval);
   }, [current, total, isPlaying]);
 
+  // Ensure userSelect is always restored if the component unmounts while a
+  // drag is in progress (the mouseup handler won't fire in that case).
+  useEffect(() => {
+    return () => {
+      if (isDraggingRef.current) {
+        document.body.style.userSelect = "";
+      }
+    };
+  }, []);
+
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (total === 0) return;
     isDraggingRef.current = true;

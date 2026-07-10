@@ -1,6 +1,7 @@
 import { m, AnimatePresence, useReducedMotion } from "framer-motion";
 import { TAB_ANIMATION, MODE_TRANSITION } from "../../lib/animation-config";
 import { ErrorBoundary } from "../ui/error-boundary";
+import { Setting22 } from "reicon-react";
 import { MusicWidget } from "../widgets/MusicWidget";
 import { CalendarWidget } from "../widgets/CalendarWidget";
 import { SystemWidget } from "../widgets/SystemWidget";
@@ -15,7 +16,8 @@ import { useTabFallback } from "../../hooks/useTabFallback";
 import { TabBar } from "./TabBar";
 import { CompactContent } from "./CompactContent";
 import { WeatherPanel } from "./WeatherPanel";
-import { Setting22 } from "reicon-react";
+import { useLoadedPlugins } from "../../plugins/plugin-store";
+import { PluginExpandedPanel } from "../../plugins/PluginExpandedPanel";
 
 interface IslandLayoutProps {
   mode: IslandMode;
@@ -47,6 +49,10 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
   const hasSystemTab = showSystem;
   const hasWeatherTab = showWeather;
   const hasTrayTab = showTray;
+
+  // Dynamic plugin tabs (plugins with an expanded view become tabs)
+  const loadedPlugins = useLoadedPlugins();
+  const pluginTabs = loadedPlugins.filter((p) => p.expanded != null);
 
   const tabTransition = reduce ? { duration: 0 } : TAB_ANIMATION.transition;
   const tabInitial = reduce
@@ -121,6 +127,7 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                 hasTrayTab={hasTrayTab}
                 hasSystemTab={hasSystemTab}
                 hasWeatherTab={hasWeatherTab}
+                pluginTabs={pluginTabs}
               />
               <div className="flex items-center gap-1 text-white/50 pr-1">
                 {showMic && (
@@ -211,6 +218,22 @@ export function IslandLayout({ mode }: IslandLayoutProps) {
                       <TrayWidget />
                     </ErrorBoundary>
                   </m.div>
+                )}
+
+                {/* Dynamic plugin tabs */}
+                {pluginTabs.map((plugin) =>
+                  activeTab === plugin.manifest.id ? (
+                    <m.div
+                      key={plugin.manifest.id}
+                      initial={tabInitial}
+                      animate={{ opacity: 1, y: 0, filter: "none" }}
+                      exit={tabExit}
+                      transition={tabTransition}
+                      className="flex flex-col flex-1 min-h-0 py-1 h-full"
+                    >
+                      <PluginExpandedPanel pluginId={plugin.manifest.id} />
+                    </m.div>
+                  ) : null
                 )}
               </AnimatePresence>
             </div>

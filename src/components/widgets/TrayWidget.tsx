@@ -14,6 +14,7 @@ import {
   Folder,
   File,
   FileText,
+  UploadSquare,
 } from "reicon-react";
 import { useTrayStore, TrayFile } from "../../stores/tray-store";
 import { useIslandStore } from "../../stores/island-store";
@@ -30,7 +31,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
-import { UploadSquare } from "reicon-react";
 
 // Helper to get extension-specific icons
 function getFileIcon(extension: string, isDir: boolean) {
@@ -155,8 +155,8 @@ export function TrayWidget() {
       await copyFilesToClipboard(selectedFiles.map((f) => f.path));
       setSelectedIds([]);
     } catch (err) {
+      // Only log the error — do not remove files from the tray on a transient IPC failure
       console.error("Failed to copy selected files:", err);
-      selectedFiles.forEach((f) => removeFile(f.id));
       setSelectedIds([]);
     }
   };
@@ -177,8 +177,8 @@ export function TrayWidget() {
     try {
       await openFileOnDisk(file.path);
     } catch (err) {
+      // Only log — do not silently remove on a transient error
       console.error("Failed to open file:", err);
-      removeFile(file.id);
     }
   };
 
@@ -186,8 +186,8 @@ export function TrayWidget() {
     try {
       await copyFilesToClipboard([file.path]);
     } catch (err) {
+      // Only log — do not silently remove on a transient error
       console.error("Failed to copy file:", err);
-      removeFile(file.id);
     }
   };
 
@@ -195,8 +195,8 @@ export function TrayWidget() {
     try {
       await revealInExplorer(file.path);
     } catch (err) {
+      // Only log — do not silently remove on a transient error
       console.error("Failed to reveal file in explorer:", err);
-      removeFile(file.id);
     }
   };
 
