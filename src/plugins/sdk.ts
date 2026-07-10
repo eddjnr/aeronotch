@@ -11,6 +11,21 @@ export function getActiveTab(): string {
 }
 
 /**
+ * Subscribes to changes in the active tab ID.
+ * Returns an unsubscribe function.
+ */
+export function subscribeActiveTab(callback: (tab: string) => void): () => void {
+  let prevVal = useIslandStore.getState().activeTab;
+  return useIslandStore.subscribe((s) => {
+    const val = s.activeTab;
+    if (val !== prevVal) {
+      prevVal = val;
+      callback(val);
+    }
+  });
+}
+
+/**
  * Gets whether the app currently has window focus.
  */
 export function isWindowFocused(): boolean {

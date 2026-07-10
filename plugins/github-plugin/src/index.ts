@@ -6,6 +6,7 @@ import {
   subscribePluginState,
   getActiveTab,
   isWindowFocused,
+  subscribeActiveTab,
 } from '@aeronotch/plugin-sdk';
 
 const pluginId = 'github-plugin';
@@ -73,6 +74,22 @@ export default async function init(): Promise<void> {
         console.log('[GitHubPlugin] Selected repos changed, polling immediately...');
         startPollingLoop();
       }, 500);
+    }
+  });
+
+  // Subscribe to window focus to poll immediately
+  if (typeof window !== 'undefined') {
+    window.addEventListener('focus', () => {
+      console.log('[GitHubPlugin] Window focused, polling immediately...');
+      startPollingLoop();
+    });
+  }
+
+  // Subscribe to active tab changes to poll immediately when switched to GitHub Actions
+  subscribeActiveTab((tabId) => {
+    if (tabId === pluginId) {
+      console.log('[GitHubPlugin] Tab switched to GitHub Actions, polling immediately...');
+      startPollingLoop();
     }
   });
 }
