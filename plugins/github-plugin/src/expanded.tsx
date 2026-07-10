@@ -55,8 +55,8 @@ export default function Expanded() {
   }, [selectedRepos, selectedRepoFullName]);
 
   const activeRepoRuns = selectedRepoFullName
-      ? runsByRepo[selectedRepoFullName] || []
-      : [];
+    ? runsByRepo[selectedRepoFullName] || []
+    : [];
 
   const handleOpenUrl = (url: string) => {
     openInBrowser(url);
@@ -86,7 +86,13 @@ export default function Expanded() {
   return (
     <div className="grid grid-cols-[160px_1fr] h-full gap-3 overflow-hidden text-white">
       {/* Left: Repo List */}
-      <div className="flex flex-col gap-1 overflow-y-auto border-r border-white/[0.06] pr-2 scrollbar-none">
+      <div
+        className="flex flex-col gap-1 overflow-y-auto border-r border-white/[0.06] pr-2"
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(255, 255, 255, 0.12) transparent",
+        }}
+      >
         <span className="text-[9px] font-bold text-white/30 uppercase px-2 mb-1">
           Monitored Repos
         </span>
@@ -102,7 +108,7 @@ export default function Expanded() {
             (r) =>
               r.status !== "in_progress" &&
               r.status !== "queued" &&
-              r.status !== "running"
+              r.status !== "running",
           );
           const hasFailed = completedRuns[0]?.conclusion === "failure";
 
@@ -115,7 +121,7 @@ export default function Expanded() {
             <button
               key={repo.fullName}
               onClick={() => setSelectedRepoFullName(repo.fullName)}
-              className={`flex items-center gap-2.5 w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors focus:outline-none cursor-pointer ${
+              className={`flex items-center gap-2.5 w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors focus:outline-none ${
                 selectedRepoFullName === repo.fullName
                   ? "bg-white/[0.08] text-white font-semibold"
                   : "text-white/50 hover:bg-white/[0.04]"
@@ -138,7 +144,13 @@ export default function Expanded() {
       </div>
 
       {/* Right: Runs list for selected repo */}
-      <div className="flex flex-col gap-2 overflow-y-auto pr-1">
+      <div
+        className="flex flex-col gap-2 overflow-y-auto pr-1"
+        style={{
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(255, 255, 255, 0.12) transparent",
+        }}
+      >
         {selectedRepoFullName ? (
           <>
             <span className="text-[9px] font-bold text-white/30 uppercase mb-1">
