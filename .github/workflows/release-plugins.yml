@@ -2,9 +2,8 @@ name: Release Plugins
 
 on:
   push:
-    tags:
-      - '*-v[0-9]*'
-      - 'plugins-v*'
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -16,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -31,46 +32,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Detect changes and auto-bump versions
+        run: node scripts/auto-release-plugins.mjs
+
       - name: Build plugins
         run: pnpm plugins:build
-
-      - name: Update manifest.json version
-        shell: bash
-        run: |
-          TAG="${{ github.ref_name }}"
-          if [[ "$TAG" =~ ^plugins-v[0-9] ]]; then
-            VERSION=${TAG#plugins-v}
-            echo "Publishing all plugins with version $VERSION..."
-            for manifest_path in plugins/*/dist/manifest.json; do
-              if [ -f "$manifest_path" ]; then
-                node -e "
-                  const fs = require('fs');
-                  const path = '$manifest_path';
-                  const manifest = JSON.parse(fs.readFileSync(path, 'utf8'));
-                  manifest.version = '$VERSION';
-                  fs.writeFileSync(path, JSON.stringify(manifest, null, 2));
-                "
-                echo "Updated manifest: $manifest_path to version $VERSION"
-              fi
-            done
-          elif [[ "$TAG" =~ -v[0-9] ]]; then
-            PLUGIN_ID="${TAG%-v*}"
-            VERSION="${TAG##*-v}"
-            echo "Publishing plugin $PLUGIN_ID with version $VERSION..."
-            manifest_path="plugins/$PLUGIN_ID/dist/manifest.json"
-            if [ -f "$manifest_path" ]; then
-              node -e "
-                const fs = require('fs');
-                const path = '$manifest_path';
-                const manifest = JSON.parse(fs.readFileSync(path, 'utf8'));
-                manifest.version = '$VERSION';
-                fs.writeFileSync(path, JSON.stringify(manifest, null, 2));
-              "
-              echo "Updated manifest: $manifest_path to version $VERSION"
-            else
-              echo "Warning: Manifest not found at $manifest_path"
-            fi
-          fi
 
       - name: Prepare deployment directory
         run: |
