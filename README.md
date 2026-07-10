@@ -118,6 +118,82 @@ Each feature module follows the same pattern:
 
 ---
 
+## Plugin System
+
+AeroNotch features a dynamic plugin system that allows extending the island with new integrations and widgets on the fly. Plugins are compiled into stand-alone ES modules and loaded dynamically via `blob:` URLs inside WebView2.
+
+### Manifest Configuration (`manifest.json`)
+
+Every plugin must contain a `manifest.json` file in its root:
+
+```json
+{
+  "id": "my-plugin",
+  "name": "My Custom Widget",
+  "version": "1.0.0",
+  "description": "Monitors custom APIs and shows a compact widget.",
+  "author": "YourName",
+  "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z", // SVG path
+  "entry": "index.js", // Background entry script (polling / API loops)
+  "ui": {
+    "compact": "compact.js",   // Renders inside the compact island taskbar
+    "expanded": "expanded.js", // Renders in the island's expanded panel
+    "settings": "settings.js"  // Renders in the settings window tab
+  }
+}
+```
+
+### The Plugin SDK (`@aeronotch/plugin-sdk`)
+
+Plugins communicate with the host application through a unified SDK shim. Exposed APIs include:
+
+- **State Management:**
+  - `usePluginState<T>(pluginId)`: React hook to read and bind plugin state.
+  - `getPluginState<T>(pluginId)`: Retrieve state imperatively (useful in background workers).
+  - `pluginStateActions.set(pluginId, data)`: Modify the plugin's global central state.
+  - `subscribePluginState(pluginId, callback)`: Listen for external/Tauri state changes.
+- **Storage:**
+  - `fileStorage.readJson<T>(pluginId, filename)` / `writeJson(...)`: Save local config/cache files in the app's sandboxed plugins directory.
+  - `secureStorage.getItem(key)` / `setItem(...)`: Store encrypted credentials (like OAuth API tokens) using native OS keyrings (Windows Credentials Manager).
+- **OAuth & System:**
+  - `oauth.requestDeviceCode(clientId, scope)` / `pollAccessToken(...)`: Safe device-authorization flow that bypasses CORS/redirect limitations.
+  - `subscribeActiveTab(callback)`: Fires when the user switches tabs, allowing background loops to trigger instant polls.
+  - `openInBrowser(url)`: Securely opens URLs using the native default system browser.
+
+---
+
+### How to Create a Plugin
+
+1. **Setup Directory:**
+   Create a new folder inside `plugins/` (e.g. `plugins/my-plugin`). Initialize it with a `package.json` and a `tsconfig.json`. Use path mapping in `tsconfig.json` to map `@aeronotch/plugin-sdk` to the local implementation file `src/plugins/sdk.ts` for type checking:
+   ```json
+   {
+     "compilerOptions": {
+       "paths": {
+         "@aeronotch/plugin-sdk": ["../../src/plugins/sdk.ts"]
+       }
+     }
+   }
+   ```
+
+2. **Implement Components:**
+   - **Background Loop (`src/index.ts`):** Default-exports an `init()` function. Runs polling loops (using fetch/polling) and updates central memory using `pluginStateActions.set(...)`.
+   - **Compact View (`src/compact.tsx`):** Default-exports a React component displaying miniature metrics or icons in the active island.
+   - **Expanded View (`src/expanded.tsx`):** Default-exports a React component displaying detail lists, graphs, or logs inside the focused dropdown menu.
+   - **Settings Tab (`src/settings.tsx`):** Default-exports a settings panel for user authentication, repository selection, and rate parameters.
+
+3. **Build and Local Install:**
+   Compile the TS source files into bundled ES modules using Esbuild (see `plugins/github-plugin/build.mjs` for reference).
+   Run the following script command to build and install your plugin into the local `%APPDATA%` folder:
+   ```bash
+   pnpm plugins:build && pnpm plugins:install
+   ```
+
+4. **Production Publish & CD:**
+   Push changes to the `main` branch. The automated CD workflow (`release-plugins.yml`) will detect changes in your folder, perform version increments based on conventional commits, update the global store `registry.json`, and deploy the built artifacts to GitHub Pages for instant, in-app installation.
+
+---
+
 ## Tech Stack
 
 | Layer              | Technology                                           |
