@@ -21,30 +21,19 @@ export function AboutTab() {
       const kofi = (window as any).kofiwidget2;
       if (kofi && kofiContainerRef.current) {
         kofi.init('Buy me a coffe', '#141414', 'F6J722W2N5');
-        kofiContainerRef.current.innerHTML = kofi.getHTML();
+        kofi.draw();
       }
     };
 
     if (!script) {
       script = document.createElement("script");
       script.src = "https://storage.ko-fi.com/cdn/widget/Widget_2.js";
-      script.type = "text/javascript";
       script.async = true;
       script.onload = initWidget;
       document.body.appendChild(script);
     } else {
-      if ((window as any).kofiwidget2) {
-        initWidget();
-      } else {
-        script.addEventListener("load", initWidget);
-      }
+      initWidget();
     }
-
-    return () => {
-      if (script) {
-        script.removeEventListener("load", initWidget);
-      }
-    };
   }, []);
 
   return (
@@ -54,55 +43,36 @@ export function AboutTab() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
       transition={tabTransition}
-      className="flex flex-col items-center justify-center text-center gap-4 py-8 select-none"
+      className="flex flex-col gap-6 max-w-lg overflow-y-auto max-h-[82vh] pr-2 pb-6"
+      style={{
+        scrollbarWidth: "thin",
+        scrollbarColor: "rgba(255, 255, 255, 0.12) transparent",
+      }}
     >
-      <div className="relative w-44 h-44 flex items-center justify-center mb-1">
-        <img
-          src="/logo.png"
-          alt="AeroNotch Logo"
-          className="w-16 h-16 rounded-2xl object-cover z-10 shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-white/20 select-none pointer-events-none"
-        />
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <SpinningText
-            radius={5.5}
-            fontSize={0.8}
-            variants={{
-              container: {
-                hidden: { opacity: 1 },
-                visible: {
-                  opacity: 1,
-                  rotate: 360,
-                  transition: {
-                    type: "spring",
-                    bounce: 0,
-                    duration: 8,
-                    repeat: Infinity,
-                    staggerChildren: 0.03,
-                  },
-                },
-              },
-              item: {
-                hidden: { opacity: 0, filter: "blur(4px)" },
-                visible: { opacity: 1, filter: "none" },
-              },
-            }}
-            className="font-bold text-[#8e8e93] uppercase tracking-[0.05em]"
-          >{`aeronotch • powered by • ed • `}</SpinningText>
+      <div>
+        <h1 className="text-[22px] font-bold text-white tracking-tight">About</h1>
+        <p className="text-[13px] text-white/40 mt-1">AeroNotch System Information</p>
+      </div>
+
+      <div className="flex flex-col items-center justify-center p-8 bg-[#2c2c2e] rounded-xl border border-white/[0.08] relative overflow-hidden">
+        <SpinningText duration={20} className="text-[#8e8e93] text-xs font-medium">
+          AERONOTCH • MINIMALIST • DYNAMIC •
+        </SpinningText>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-white tracking-widest">
+          v{t("about.version")}
         </div>
       </div>
 
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">
-          AeroNotch
-        </h1>
-        <span className="text-[10px] text-[#8e8e93] font-semibold leading-none mt-1 inline-block">
-          {t("lblVersion")}
-        </span>
+      <div className="flex flex-col gap-3 text-xs leading-relaxed text-[#8e8e93]">
+        <p>
+          AeroNotch is an interactive menu bar widget designed for Windows, bringing elegant status
+          indicators, quick shortcuts, and media information in a compact layout.
+        </p>
+        <p>
+          Developed with React, Tailwind CSS, and Rust (Tauri), designed to be lightweight, fast,
+          and customizable.
+        </p>
       </div>
-
-      <p className="text-xs text-[#c7c7cc] max-w-sm leading-relaxed mt-1">
-        {t("lblDescription")}
-      </p>
 
       <div ref={kofiContainerRef} className="mt-2" />
 
