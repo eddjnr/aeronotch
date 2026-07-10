@@ -86,7 +86,10 @@ function Expanded() {
         const hasActive = repoRuns.some(
           (r) => r.status === "in_progress" || r.status === "queued" || r.status === "running"
         );
-        const hasFailed = repoRuns.some((r) => r.conclusion === "failure");
+        const completedRuns = repoRuns.filter(
+          (r) => r.status !== "in_progress" && r.status !== "queued" && r.status !== "running"
+        );
+        const hasFailed = completedRuns[0]?.conclusion === "failure";
         let statusDotColor = "bg-white/20";
         if (hasActive) statusDotColor = "bg-blue-400 animate-pulse";
         else if (hasFailed) statusDotColor = "bg-rose-500 animate-pulse";
