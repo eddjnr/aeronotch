@@ -1,0 +1,14 @@
+{
+  "name": "aeronotch-github-plugin",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  }
+}
