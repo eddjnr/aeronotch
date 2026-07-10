@@ -11,3 +11,4 @@ export const oauth = sdk.oauth;
 export const getActiveTab = sdk.getActiveTab;
 export const isWindowFocused = sdk.isWindowFocused;
 export const subscribeActiveTab = sdk.subscribeActiveTab;
+export const openInBrowser = sdk.openInBrowser;

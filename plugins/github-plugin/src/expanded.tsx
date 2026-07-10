@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { usePluginState } from "@aeronotch/plugin-sdk";
+import { usePluginState, openInBrowser } from "@aeronotch/plugin-sdk";
 
 interface Run {
   id: number;
@@ -55,17 +55,11 @@ export default function Expanded() {
   }, [selectedRepos, selectedRepoFullName]);
 
   const activeRepoRuns = selectedRepoFullName
-    ? runsByRepo[selectedRepoFullName] || []
-    : [];
+      ? runsByRepo[selectedRepoFullName] || []
+      : [];
 
   const handleOpenUrl = (url: string) => {
-    // @ts-ignore
-    const opener = window.__TAURI__?.opener;
-    if (opener?.openUrl) {
-      opener.openUrl(url).catch(console.error);
-    } else {
-      window.open(url, "_blank");
-    }
+    openInBrowser(url);
   };
 
   const getStatusColor = (status: string, conclusion: string | null) => {

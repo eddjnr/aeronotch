@@ -307,6 +307,9 @@ export default function Expanded() {
             {installing ? "Installing..." : "Install"}
           </button>
         </div>
+        {installError && (
+          <span className="text-[10px] text-rose-400 mt-1">{installError}</span>
+        )}
         {import.meta.env.DEV && (
           <div className="flex items-center justify-between border-t border-white/[0.04] pt-3 mt-1 gap-4">
             <span className="text-[10px] text-zinc-400">Or load local plugins pre-written on your AppData:</span>

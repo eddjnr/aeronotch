@@ -58,8 +58,8 @@ export function AboutTab() {
         <SpinningText duration={20} className="text-[#8e8e93] text-xs font-medium">
           AERONOTCH • MINIMALIST • DYNAMIC •
         </SpinningText>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-white tracking-widest">
-          v{t("about.version")}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[11px] font-bold text-white/40 tracking-wider">
+          {t("lblVersion")}
         </div>
       </div>
 

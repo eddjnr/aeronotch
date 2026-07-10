@@ -116,3 +116,17 @@ export const oauth = {
     return invoke("github_poll_access_token", { clientId, deviceCode });
   }
 };
+
+/**
+ * Opens a URL in the user's default browser.
+ */
+export async function openInBrowser(url: string): Promise<void> {
+  try {
+    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    await openUrl(url);
+  } catch (e) {
+    console.warn("[SDK] Failed to open URL with tauri opener, falling back to window.open:", e);
+    window.open(url, "_blank");
+  }
+}
+
