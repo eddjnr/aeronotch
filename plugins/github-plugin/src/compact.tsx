@@ -1,8 +1,9 @@
 import { usePluginState } from '@aeronotch/plugin-sdk';
 
 interface Run {
+  repoFullName: string;
   status: string;
-  conclusion: string;
+  conclusion: string | null;
 }
 
 interface PluginState {
@@ -13,15 +14,42 @@ export default function Compact() {
   const state = usePluginState<PluginState>('github-plugin');
   const runs = state?.runs ?? [];
 
-  const activeRuns = runs.filter(
-    (r) => r.status === 'in_progress' || r.status === 'queued' || r.status === 'running'
-  );
-  const failedRuns = runs.filter((r) => r.conclusion === 'failure');
+  // Group runs by repoFullName
+  const runsByRepo: Record<string, Run[]> = {};
+  runs.forEach((run) => {
+    if (!runsByRepo[run.repoFullName]) {
+      runsByRepo[run.repoFullName] = [];
+    }
+    runsByRepo[run.repoFullName].push(run);
+  });
+
+  let hasActive = false;
+  let hasFailed = false;
+  let hasRuns = false;
+
+  Object.values(runsByRepo).forEach((repoRuns) => {
+    if (repoRuns.length > 0) {
+      hasRuns = true;
+      const repoHasActive = repoRuns.some(
+        (r) => r.status === 'in_progress' || r.status === 'queued' || r.status === 'running'
+      );
+      if (repoHasActive) {
+        hasActive = true;
+      } else {
+        const completedRuns = repoRuns.filter(
+          (r) => r.status !== 'in_progress' && r.status !== 'queued' && r.status !== 'running'
+        );
+        if (completedRuns[0]?.conclusion === 'failure') {
+          hasFailed = true;
+        }
+      }
+    }
+  });
 
   let status = 'idle';
-  if (runs.length > 0) {
-    if (activeRuns.length > 0) status = 'running';
-    else if (failedRuns.length > 0) status = 'failed';
+  if (hasRuns) {
+    if (hasActive) status = 'running';
+    else if (hasFailed) status = 'failed';
     else status = 'success';
   }
 
