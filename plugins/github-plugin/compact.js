@@ -22,6 +22,8 @@ sdk.fileStorage;
 sdk.oauth;
 sdk.getActiveTab;
 sdk.isWindowFocused;
+sdk.subscribeActiveTab;
+sdk.openInBrowser;
 function Compact() {
   const state = usePluginState("github-plugin");
   const runs = state?.runs ?? [];

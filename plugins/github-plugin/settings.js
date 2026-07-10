@@ -28,6 +28,8 @@ const fileStorage = sdk.fileStorage;
 const oauth = sdk.oauth;
 sdk.getActiveTab;
 sdk.isWindowFocused;
+sdk.subscribeActiveTab;
+sdk.openInBrowser;
 const pluginId = "github-plugin";
 const CustomCheckbox = ({ checked }) => /* @__PURE__ */ jsx(
   "div",

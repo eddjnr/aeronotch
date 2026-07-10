@@ -8,6 +8,8 @@ const fileStorage = sdk.fileStorage;
 sdk.oauth;
 const getActiveTab = sdk.getActiveTab;
 const isWindowFocused = sdk.isWindowFocused;
+const subscribeActiveTab = sdk.subscribeActiveTab;
+sdk.openInBrowser;
 const pluginId = "github-plugin";
 let timeoutId = null;
 const etagCache = {};
@@ -45,6 +47,18 @@ async function init() {
         console.log("[GitHubPlugin] Selected repos changed, polling immediately...");
         startPollingLoop();
       }, 500);
+    }
+  });
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", () => {
+      console.log("[GitHubPlugin] Window focused, polling immediately...");
+      startPollingLoop();
+    });
+  }
+  subscribeActiveTab((tabId) => {
+    if (tabId === pluginId) {
+      console.log("[GitHubPlugin] Tab switched to GitHub Actions, polling immediately...");
+      startPollingLoop();
     }
   });
 }

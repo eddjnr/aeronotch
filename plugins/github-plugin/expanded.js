@@ -28,6 +28,8 @@ sdk.fileStorage;
 sdk.oauth;
 sdk.getActiveTab;
 sdk.isWindowFocused;
+sdk.subscribeActiveTab;
+const openInBrowser = sdk.openInBrowser;
 function Expanded() {
   const state = usePluginState("github-plugin") || {
     runs: [],
@@ -53,12 +55,7 @@ function Expanded() {
   }, [selectedRepos, selectedRepoFullName]);
   const activeRepoRuns = selectedRepoFullName ? runsByRepo[selectedRepoFullName] || [] : [];
   const handleOpenUrl = (url) => {
-    const opener = window.__TAURI__?.opener;
-    if (opener?.openUrl) {
-      opener.openUrl(url).catch(console.error);
-    } else {
-      window.open(url, "_blank");
-    }
+    openInBrowser(url);
   };
   const getStatusColor = (status, conclusion) => {
     if (status === "in_progress" || status === "queued" || status === "running")
