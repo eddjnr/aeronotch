@@ -8,6 +8,7 @@ import { Equalizer } from "../island/Equalizer";
 import type { MediaInfo, IslandMode } from "../../types";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Next2, Previous2, PlayCircle, PauseCircle } from "reicon-react";
+import { useIslandStore } from "../../stores/island-store";
 
 interface MusicWidgetProps {
   media: MediaInfo | null;
@@ -16,6 +17,7 @@ interface MusicWidgetProps {
 
 export function MusicWidget({ media, mode }: MusicWidgetProps) {
   const { t } = useTranslation();
+  const mediaUpdatedAt = useIslandStore((s) => s.mediaUpdatedAt);
   const [localIsPlaying, setLocalIsPlaying] = useState(
     media?.is_playing ?? false,
   );
@@ -40,6 +42,16 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
   if (mode === "compact") {
     return null; // Equalizer is shown separately in compact
   }
+
+  // Estimate playback position since last update to avoid progress jump/reset on mount
+  const elapsedSinceLastUpdate =
+    media.is_playing && mediaUpdatedAt
+      ? (Date.now() - mediaUpdatedAt) / 1000
+      : 0;
+  const initialPosition = Math.min(
+    media.position_seconds + elapsedSinceLastUpdate,
+    media.duration_seconds,
+  );
 
   // Expanded mode — full player
   return (
@@ -88,7 +100,7 @@ export function MusicWidget({ media, mode }: MusicWidgetProps) {
       {/* Middle Section: Progress Bar */}
       <div className="w-full">
         <ProgressBar
-          current={media.position_seconds}
+          current={initialPosition}
           total={media.duration_seconds}
           isPlaying={localIsPlaying}
           onSeek={(pos) => {

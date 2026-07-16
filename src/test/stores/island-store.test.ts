@@ -28,6 +28,7 @@ describe("island-store", () => {
     };
     useIslandStore.getState().setMediaInfo(media);
     expect(useIslandStore.getState().mediaInfo).toEqual(media);
+    expect(useIslandStore.getState().mediaUpdatedAt).toBeGreaterThan(0);
   });
 
   it("setMediaInfo accepts null", () => {

@@ -6,6 +6,7 @@ interface IslandState {
   setMode: (mode: IslandMode) => void;
 
   mediaInfo: MediaInfo | null;
+  mediaUpdatedAt: number;
   setMediaInfo: (info: MediaInfo | null) => void;
 
   micStatus: MicStatus | null;
@@ -38,7 +39,8 @@ export const useIslandStore = create<IslandState>((set) => ({
   setMode: (mode) => set({ mode }),
 
   mediaInfo: null,
-  setMediaInfo: (mediaInfo) => set({ mediaInfo }),
+  mediaUpdatedAt: 0,
+  setMediaInfo: (mediaInfo) => set({ mediaInfo, mediaUpdatedAt: Date.now() }),
 
   micStatus: null,
   setMicStatus: (micStatus) => set({ micStatus }),
