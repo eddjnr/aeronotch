@@ -261,6 +261,49 @@ fn is_allowed_media_app(app_name: &str) -> bool {
     keywords.iter().any(|&kw| app_name_lower.contains(kw))
 }
 
+/// Finds the first SMTC session from an allowed media app.
+/// Priority: (1) allowed session that is Playing, (2) system current session if allowed,
+/// (3) first allowed session from the full list (may be paused/stopped).
+fn find_allowed_session(
+    manager: &GlobalSystemMediaTransportControlsSessionManager,
+) -> Option<GlobalSystemMediaTransportControlsSession> {
+    let sessions: Vec<GlobalSystemMediaTransportControlsSession> =
+        manager.GetSessions().ok()
+            .map(|s| s.into_iter().collect())
+            .unwrap_or_default();
+
+    // 1. Prioriza qualquer sessão permitida que esteja tocando agora
+    for session in &sessions {
+        if let Ok(app_id) = session.SourceAppUserModelId() {
+            if is_allowed_media_app(&app_id.to_string()) {
+                if let Ok(playback_info) = session.GetPlaybackInfo() {
+                    if let Ok(status) = playback_info.PlaybackStatus() {
+                        if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+                            return Some(session.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Fallback: sessão "atual" do sistema, se for de um app permitido
+    if let Ok(current_session) = manager.GetCurrentSession() {
+        if let Ok(app_id) = current_session.SourceAppUserModelId() {
+            if is_allowed_media_app(&app_id.to_string()) {
+                return Some(current_session);
+            }
+        }
+    }
+
+    // 3. Fallback final: primeira sessão permitida da lista já obtida (pausada/parada)
+    sessions.into_iter().find(|session| {
+        session.SourceAppUserModelId()
+            .map(|id| is_allowed_media_app(&id.to_string()))
+            .unwrap_or(false)
+    })
+}
+
 impl MediaInfo {
     pub async fn get_current() -> Option<MediaInfo> {
         let tx = ensure_worker();
@@ -287,53 +330,7 @@ impl MediaInfo {
             }
         };
 
-        // GetSessions() chamado uma única vez e reaproveitado.
-        let sessions: Vec<GlobalSystemMediaTransportControlsSession> =
-            manager.GetSessions().ok()
-                .map(|s| s.into_iter().collect())
-                .unwrap_or_default();
-
-        let mut target_session = None;
-
-        // 1. Prioriza qualquer sessão permitida que esteja tocando agora
-        for session in &sessions {
-            if let Ok(app_id) = session.SourceAppUserModelId() {
-                if is_allowed_media_app(&app_id.to_string()) {
-                    if let Ok(playback_info) = session.GetPlaybackInfo() {
-                        if let Ok(status) = playback_info.PlaybackStatus() {
-                            if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
-                                target_session = Some(session.clone());
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. Fallback: sessão "atual" do sistema, se for de um app permitido
-        if target_session.is_none() {
-            if let Ok(current_session) = manager.GetCurrentSession() {
-                if let Ok(app_id) = current_session.SourceAppUserModelId() {
-                    if is_allowed_media_app(&app_id.to_string()) {
-                        target_session = Some(current_session);
-                    }
-                }
-            }
-        }
-
-        // 3. Fallback final: primeira sessão permitida da lista já obtida (pausada/parada)
-        if target_session.is_none() {
-            target_session = sessions.into_iter().find(|session| {
-                session.SourceAppUserModelId()
-                    .map(|id| is_allowed_media_app(&id.to_string()))
-                    .unwrap_or(false)
-            });
-        }
-
-        // No allowed app sessions — normal state (e.g. browser closed/paused),
-        // not a SessionManager failure.
-        let session = match target_session {
+        let session = match find_allowed_session(&manager) {
             Some(s) => s,
             None => {
                 log::debug!("[media] No active media session from allowed apps");
@@ -483,7 +480,8 @@ impl MediaAction {
     fn execute_action_blocking(action: MediaAction) -> Result<(), String> {
         let manager = get_session_manager()
             .ok_or_else(|| "Could not get SMTC Session Manager".to_string())?;
-        let session = manager.GetCurrentSession().map_err(|e| e.to_string())?;
+        let session = find_allowed_session(&manager)
+            .ok_or_else(|| "No active media session from allowed apps".to_string())?;
 
         let op = match action {
             MediaAction::PlayPause => session.TryTogglePlayPauseAsync(),
@@ -513,7 +511,8 @@ pub async fn media_seek(position_seconds: f64) -> Result<(), String> {
 fn seek_blocking(position_seconds: f64) -> Result<(), String> {
     let manager = get_session_manager()
         .ok_or_else(|| "Could not get SMTC Session Manager".to_string())?;
-    let session = manager.GetCurrentSession().map_err(|e| e.to_string())?;
+    let session = find_allowed_session(&manager)
+        .ok_or_else(|| "No active media session from allowed apps".to_string())?;
     let ticks = (position_seconds * 10_000_000.0) as i64;
 
     let op = session.TryChangePlaybackPositionAsync(ticks).map_err(|e| e.to_string())?;
